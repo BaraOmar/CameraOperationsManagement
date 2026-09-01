@@ -1,0 +1,115 @@
+﻿@model CameraOperationsManagement.ViewModels.Recorders.RecorderFormViewModel
+
+@{
+    ViewData["Title"] = "Add Recorder";
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Add Recorder
+        </h2>
+
+        <p class="page-description">
+            Add a new NVR or DVR recorder.
+        </p>
+    </div>
+
+</div>
+
+
+<div class="app-card">
+
+    <div class="app-card-body">
+
+        <form asp-action="Create"
+              method="post">
+
+            <partial name="_RecorderForm"
+                     model="Model" />
+
+
+            <div class="d-flex gap-2 mt-4">
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    Add Recorder
+                </button>
+
+                <a asp-action="Index"
+                       class="btn btn-outline-secondary">
+                    Cancel
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const siteSelect =
+                document.getElementById("siteSelect");
+
+            const switchSelect =
+                document.getElementById("switchSelect");
+
+
+            siteSelect.addEventListener("change", async function () {
+
+                const siteId = this.value;
+
+                switchSelect.innerHTML =
+                    '<option value="">No switch</option>';
+
+
+                if (!siteId) {
+                    return;
+                }
+
+
+                const url =
+                    '@Url.Action("GetSwitchesBySite", "Recorders")'
+                    + '?siteId='
+                    + encodeURIComponent(siteId);
+
+
+                const response = await fetch(url);
+
+
+                if (!response.ok) {
+                    return;
+                }
+
+
+                const switches =
+                    await response.json();
+
+
+                switches.forEach(item => {
+
+                    const option =
+                        document.createElement("option");
+
+                    option.value = item.id;
+                    option.textContent = item.name;
+
+                    switchSelect.appendChild(option);
+
+                });
+
+            });
+
+        });
+    </script>
+}

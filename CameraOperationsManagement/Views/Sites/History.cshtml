@@ -1,0 +1,408 @@
+﻿@model CameraOperationsManagement.ViewModels.Sites.SiteHistoryViewModel
+
+@{
+    ViewData["Title"] = "Site History";
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Site History
+        </h2>
+
+        <p class="page-description">
+            Complete operational history for @Model.SiteName.
+        </p>
+    </div>
+
+    <a asp-action="Index"
+           class="btn btn-outline-secondary">
+        Back to Sites
+    </a>
+
+</div>
+
+
+<!-- SITE INFORMATION -->
+<div class="app-card mb-4">
+
+    <div class="app-card-header">
+        <strong>Site Information</strong>
+    </div>
+
+    <div class="app-card-body">
+
+        <div class="row g-4">
+
+            <div class="col-md-4">
+
+                <div class="text-muted small mb-1">
+                    Site Name
+                </div>
+
+                <strong>
+                    @Model.SiteName
+                </strong>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="text-muted small mb-1">
+                    Site ID
+                </div>
+
+                <div>
+                    @Model.SiteId
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="text-muted small mb-1">
+                    Location
+                </div>
+
+                <div>
+                    @(Model.Location ?? "—")
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="text-muted small mb-1">
+                    Status
+                </div>
+
+                @if (Model.IsActive)
+                {
+                    <span class="badge bg-success-subtle text-success">
+                        Active
+                    </span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary-subtle text-secondary">
+                        Inactive
+                    </span>
+                }
+
+            </div>
+
+
+            <div class="col-md-8">
+
+                <div class="text-muted small mb-1">
+                    Notes
+                </div>
+
+                <div>
+                    @(Model.Notes ?? "—")
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- SITE VISITS -->
+<div class="mb-3">
+
+    <h3 class="h5 mb-1">
+        Site Visits
+    </h3>
+
+    <p class="text-muted mb-0">
+        General visits recorded directly for this site.
+    </p>
+
+</div>
+
+
+@if (!Model.SiteVisits.Any())
+{
+    <div class="app-card mb-4">
+
+        <div class="app-card-body text-center text-muted py-5">
+            No site visits have been recorded.
+        </div>
+
+    </div>
+}
+else
+{
+    <div class="d-flex flex-column gap-3 mb-4">
+
+        @foreach (var visit in Model.SiteVisits)
+        {
+            <div class="app-card">
+
+                <div class="app-card-header">
+
+                    <strong>
+                        @visit.VisitDate.ToString("dd/MM/yyyy HH:mm")
+                    </strong>
+
+                    <div class="text-muted small mt-1">
+                        @visit.Purpose
+                    </div>
+
+                </div>
+
+
+                <div class="app-card-body">
+
+                    <div class="row g-4">
+
+                        <div class="col-md-6">
+
+                            <div class="text-muted small mb-2">
+                                Workers
+                            </div>
+
+                            @if (visit.WorkerNames.Any())
+                            {
+                                <div class="d-flex flex-wrap gap-2">
+
+                                    @foreach (var worker in visit.WorkerNames)
+                                    {
+                                        <span class="badge text-bg-secondary">
+                                            @worker
+                                        </span>
+                                    }
+
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="text-muted">
+                                    —
+                                </span>
+                            }
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <div class="text-muted small mb-2">
+                                Notes
+                            </div>
+
+                            <div>
+                                @(visit.Notes ?? "—")
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        }
+
+    </div>
+}
+
+
+<!-- CAMERA ACTIVITY -->
+<div class="mb-3">
+
+    <h3 class="h5 mb-1">
+        Camera Activity
+    </h3>
+
+    <p class="text-muted mb-0">
+        Camera visits recorded for cameras belonging to this site.
+    </p>
+
+</div>
+
+
+@if (!Model.CameraVisits.Any())
+{
+    <div class="app-card">
+
+        <div class="app-card-body text-center text-muted py-5">
+            No camera activity has been recorded.
+        </div>
+
+    </div>
+}
+else
+{
+    <div class="d-flex flex-column gap-3">
+
+        @foreach (var visit in Model.CameraVisits)
+        {
+            <div class="app-card">
+
+                <div class="app-card-header
+                    d-flex
+                    justify-content-between
+                    align-items-start">
+
+                    <div>
+
+                        <strong>
+                            @visit.CameraName
+                        </strong>
+
+                        <div class="text-muted small mt-1">
+                            @visit.VisitDate.ToString("dd/MM/yyyy HH:mm")
+                            ·
+                            @visit.Purpose
+                        </div>
+
+                    </div>
+
+
+                    <div class="d-flex gap-2">
+
+                        <a asp-controller="Cameras"
+                               asp-action="History"
+                               asp-route-id="@visit.CameraId"
+                               class="btn btn-sm btn-outline-secondary">
+                            Camera History
+                        </a>
+
+                        <a asp-controller="CameraVisits"
+                               asp-action="Details"
+                               asp-route-id="@visit.VisitId"
+                               class="btn btn-sm btn-outline-secondary">
+                            View Visit
+                        </a>
+
+                    </div>
+
+                </div>
+
+
+                <div class="app-card-body">
+
+                    <div class="row g-4">
+
+                        <div class="col-md-6">
+
+                            <div class="text-muted small mb-2">
+                                Workers
+                            </div>
+
+                            @if (visit.WorkerNames.Any())
+                            {
+                                <div class="d-flex flex-wrap gap-2">
+
+                                    @foreach (var worker in visit.WorkerNames)
+                                    {
+                                        <span class="badge text-bg-secondary">
+                                            @worker
+                                        </span>
+                                    }
+
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="text-muted">
+                                    —
+                                </span>
+                            }
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <div class="text-muted small mb-2">
+                                Malfunction
+                            </div>
+
+                            @if (string.IsNullOrWhiteSpace(
+                                visit.MalfunctionType))
+                            {
+                                <span class="badge bg-success-subtle text-success">
+                                    None
+                                </span>
+                            }
+                            else
+                            {
+                                <div>
+                                    <strong>
+                                        @visit.MalfunctionType
+                                    </strong>
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(
+                                    visit.MalfunctionDescription))
+                                {
+                                    <div class="text-muted mt-1">
+                                        @visit.MalfunctionDescription
+                                    </div>
+                                }
+                            }
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <div class="text-muted small mb-2">
+                                Work Performed
+                            </div>
+
+                            <div>
+                                @(visit.RepairWorkPerformed ?? "—")
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <div class="text-muted small mb-2">
+                                Repair Result
+                            </div>
+
+                            <div>
+                                @(visit.RepairResult ?? "—")
+                            </div>
+
+                        </div>
+
+
+                        @if (!string.IsNullOrWhiteSpace(
+                            visit.Notes))
+                        {
+                            <div class="col-12">
+
+                                <div class="text-muted small mb-2">
+                                    Notes
+                                </div>
+
+                                <div>
+                                    @visit.Notes
+                                </div>
+
+                            </div>
+                        }
+
+                    </div>
+
+                </div>
+
+            </div>
+        }
+
+    </div>
+}

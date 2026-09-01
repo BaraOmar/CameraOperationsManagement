@@ -1,0 +1,174 @@
+﻿@model IEnumerable<CameraOperationsManagement.ViewModels.Sites.SiteListItemViewModel>
+
+@{
+    ViewData["Title"] = "Sites";
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Sites
+        </h2>
+
+        <p class="page-description">
+            View and manage operational sites.
+        </p>
+    </div>
+
+    @if (User.IsInRole("Admin") ||
+         User.IsInRole("Editor"))
+    {
+        <a asp-action="Create"
+               class="btn btn-primary">
+            Add Site
+        </a>
+    }
+
+</div>
+
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+
+<div class="app-card">
+
+    @if (!Model.Any())
+    {
+        <div class="app-card-body text-center text-muted py-5">
+            No sites have been added yet.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+
+            <table class="table">
+
+                <thead>
+                    <tr>
+                        <th>Site ID</th>
+                        <th>Site Name</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th class="text-end">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var site in Model)
+                    {
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    @site.Id
+                                </strong>
+                            </td>
+
+
+                            <td>
+                                @site.Name
+                            </td>
+
+
+                            <td>
+                                @if (string.IsNullOrWhiteSpace(site.Location))
+                                {
+                                    <span class="text-muted">
+                                        —
+                                    </span>
+                                }
+                                else
+                                {
+                                    @site.Location
+                                }
+                            </td>
+
+
+                            <td>
+                                @if (site.IsActive)
+                                {
+                                    <span class="badge bg-success-subtle text-success">
+                                        Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary">
+                                        Inactive
+                                    </span>
+                                }
+                            </td>
+
+
+                            <td class="text-end">
+
+                                <div class="d-inline-flex gap-2">
+
+                                    <!-- Available to Admin, Editor and Viewer -->
+                                    <a asp-action="History"
+                                           asp-route-id="@site.Id"
+                                           class="btn btn-sm btn-outline-secondary">
+                                        History
+                                    </a>
+
+
+                                    @if (User.IsInRole("Admin") ||
+                                         User.IsInRole("Editor"))
+                                    {
+                                        <a asp-action="Edit"
+                                               asp-route-id="@site.Id"
+                                               class="btn btn-sm btn-outline-secondary">
+                                            Edit
+                                        </a>
+                                    }
+
+
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <form asp-action="ToggleStatus"
+                                              asp-route-id="@site.Id"
+                                              method="post">
+
+                                            @if (site.IsActive)
+                                            {
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-secondary">
+                                                    Deactivate
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-secondary">
+                                                    Activate
+                                                </button>
+                                            }
+
+                                        </form>
+                                    }
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+    }
+
+</div>

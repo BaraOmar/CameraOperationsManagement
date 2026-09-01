@@ -1,0 +1,56 @@
+﻿@model CameraOperationsManagement.ViewModels.NetworkSwitches.NetworkSwitchFormViewModel
+
+@{
+    ViewData["Title"] = "Add Network Switch";
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Add Network Switch
+        </h2>
+
+        <p class="page-description">
+            Add a network switch and assign it to a site.
+        </p>
+    </div>
+
+</div>
+
+
+<div class="app-card">
+
+    <div class="app-card-body">
+
+        <form asp-action="Create"
+              method="post">
+
+            <partial name="_NetworkSwitchForm"
+                     model="Model" />
+
+
+            <div class="d-flex gap-2 mt-4">
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    Add Switch
+                </button>
+
+                <a asp-action="Index"
+                       class="btn btn-outline-secondary">
+                    Cancel
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

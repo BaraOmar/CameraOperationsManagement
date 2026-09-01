@@ -1,0 +1,78 @@
+﻿@model CameraOperationsManagement.ViewModels.Sites.CreateSiteViewModel
+
+@{
+    ViewData["Title"] = "Add Site";
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Add Site
+        </h2>
+
+        <p class="page-description">
+            Add a new operational site.
+        </p>
+    </div>
+
+</div>
+
+
+<div class="app-card">
+
+    <div class="app-card-body">
+
+        <form asp-action="Create"
+              method="post">
+
+            <div asp-validation-summary="ModelOnly"
+                 class="text-danger mb-3">
+            </div>
+
+
+            <div class="mb-4">
+
+                <label asp-for="Id"
+                       class="form-label">
+                </label>
+
+                <input asp-for="Id"
+                       class="form-control"
+                       autocomplete="off" />
+
+                <span asp-validation-for="Id"
+                      class="text-danger">
+                </span>
+
+            </div>
+
+
+            <partial name="_SiteForm"
+                     model="Model" />
+
+
+            <div class="d-flex gap-2 mt-4">
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    Add Site
+                </button>
+
+                <a asp-action="Index"
+                       class="btn btn-outline-secondary">
+                    Cancel
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

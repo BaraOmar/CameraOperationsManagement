@@ -1,0 +1,60 @@
+﻿@model CameraOperationsManagement.ViewModels.RecorderHardDrives.RecorderHardDriveFormViewModel
+
+@{
+    ViewData["Title"] = "Add Hard Drive";
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Add Hard Drive
+        </h2>
+
+        <p class="page-description">
+            Add storage to the selected recorder.
+        </p>
+    </div>
+
+</div>
+
+
+<div class="app-card">
+
+    <div class="app-card-body">
+
+        <form asp-action="Create"
+              method="post">
+
+            <input asp-for="RecorderId"
+                   type="hidden" />
+
+            <partial name="_HardDriveForm"
+                     model="Model" />
+
+
+            <div class="d-flex gap-2 mt-4">
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    Add HDD
+                </button>
+
+                <a asp-action="Index"
+                       asp-route-recorderId="@Model.RecorderId"
+                       class="btn btn-outline-secondary">
+                    Cancel
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

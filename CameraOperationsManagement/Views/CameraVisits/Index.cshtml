@@ -1,0 +1,188 @@
+﻿@model IEnumerable<CameraOperationsManagement.ViewModels.CameraVisits.CameraVisitListItemViewModel>
+
+@{
+    ViewData["Title"] = "Camera Visits";
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Camera Visits
+        </h2>
+
+        <p class="page-description">
+            View the operational history of camera visits,
+            malfunctions, and repair results.
+        </p>
+    </div>
+
+    @if (User.IsInRole("Admin") ||
+         User.IsInRole("Editor"))
+    {
+        <a asp-action="Create"
+               class="btn btn-primary">
+            Record Camera Visit
+        </a>
+    }
+
+</div>
+
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+
+<div class="app-card">
+
+    @if (!Model.Any())
+    {
+        <div class="app-card-body text-center text-muted py-5">
+            No camera visits have been recorded yet.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+
+            <table class="table">
+
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Camera</th>
+                        <th>Site / Recorder</th>
+                        <th>Purpose</th>
+                        <th>Malfunction</th>
+                        <th>Repair Result</th>
+                        <th>Workers</th>
+
+                        @if (User.IsInRole("Admin") ||
+                             User.IsInRole("Editor"))
+                        {
+                            <th class="text-end">
+                                Actions
+                            </th>
+                        }
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var visit in Model)
+                    {
+                        <tr>
+
+                            <td>
+                                <div>
+                                    @visit.VisitDate.ToString("dd/MM/yyyy")
+                                </div>
+
+                                <small class="text-muted">
+                                    @visit.VisitDate.ToString("HH:mm")
+                                </small>
+                            </td>
+
+
+                            <td>
+                                <strong>
+                                    @visit.CameraName
+                                </strong>
+                            </td>
+
+
+                            <td>
+                                <div>
+                                    @visit.SiteName
+                                </div>
+
+                                <small class="text-muted">
+                                    @visit.RecorderName
+                                </small>
+                            </td>
+
+
+                            <td>
+                                @visit.Purpose
+                            </td>
+
+
+                            <td>
+                                @if (string.IsNullOrWhiteSpace(
+                                    visit.MalfunctionType))
+                                {
+                                    <span class="badge bg-success-subtle text-success">
+                                        None
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning-subtle text-warning-emphasis">
+                                        @visit.MalfunctionType
+                                    </span>
+                                }
+                            </td>
+
+
+                            <td>
+                                @if (string.IsNullOrWhiteSpace(
+                                    visit.RepairResult))
+                                {
+                                    <span class="text-muted">
+                                        —
+                                    </span>
+                                }
+                                else
+                                {
+                                    @visit.RepairResult
+                                }
+                            </td>
+
+
+                            <td>
+                                @if (visit.WorkerNames.Any())
+                                {
+                                    @string.Join(", ", visit.WorkerNames)
+                                }
+                                else
+                                {
+                                    <span class="text-muted">
+                                        —
+                                    </span>
+                                }
+                            </td>
+
+
+                            @if (User.IsInRole("Admin") ||
+                                 User.IsInRole("Editor"))
+                            {
+                                <td class="text-end">
+                                    <a asp-action="Details"
+                                           asp-route-id="@visit.Id"
+                                           class="btn btn-sm btn-outline-secondary">
+                                        Details
+                                    </a>
+                                    <a asp-action="Edit"
+                                           asp-route-id="@visit.Id"
+                                           class="btn btn-sm btn-outline-secondary">
+                                        Edit
+                                    </a>
+
+                                </td>
+                            }
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+    }
+
+</div>

@@ -1,0 +1,252 @@
+﻿@using CameraOperationsManagement.Models
+@using Microsoft.AspNetCore.Identity
+
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    var currentUser = User.Identity?.IsAuthenticated == true
+        ? await UserManager.GetUserAsync(User)
+        : null;
+
+    var role =
+        User.IsInRole("Admin") ? "Admin" :
+        User.IsInRole("Editor") ? "Editor" :
+        User.IsInRole("Viewer") ? "Viewer" :
+        string.Empty;
+
+    var fullName = currentUser == null
+        ? string.Empty
+        : $"{currentUser.FirstName} {currentUser.SecondName} {currentUser.LastName}";
+
+    var initials = currentUser == null
+        ? string.Empty
+        : $"{currentUser.FirstName.FirstOrDefault()}{currentUser.LastName.FirstOrDefault()}";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
+    <title>
+        @ViewData["Title"] - Camera Operations
+    </title>
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <link rel="stylesheet"
+          href="~/css/site.css"
+          asp-append-version="true" />
+
+    <link rel="stylesheet"
+          href="~/CameraOperationsManagement.styles.css"
+          asp-append-version="true" />
+</head>
+
+
+<body>
+
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <div class="app-shell">
+
+            <!-- SIDEBAR -->
+            <aside class="app-sidebar">
+
+                <div class="sidebar-brand">
+                    <div class="brand-mark">
+                        CO
+                    </div>
+
+                    <div>
+                        <div class="brand-title">
+                            Camera Operations
+                        </div>
+
+                        <div class="brand-subtitle">
+                            Management System
+                        </div>
+                    </div>
+                </div>
+
+
+                <nav class="sidebar-nav">
+
+                    <div class="sidebar-section">
+                        OVERVIEW
+                    </div>
+
+                    <a asp-controller="Home"
+                           asp-action="Index"
+                           class="sidebar-link">
+                        Dashboard
+                    </a>
+
+
+                    <div class="sidebar-section">
+                        INFRASTRUCTURE
+                    </div>
+
+                    <a asp-controller="Sites"
+                           asp-action="Index"
+                           class="sidebar-link">
+                        Sites
+                    </a>
+
+                    <a asp-controller="Recorders"
+                           asp-action="Index"
+                           class="sidebar-link">
+                        Recorders
+                    </a>
+
+                    <a asp-controller="Cameras"
+                           asp-action="Index"
+                           class="sidebar-link">
+                        Cameras
+                    </a>
+
+                    <a asp-controller="NetworkSwitches"
+                           asp-action="Index"
+                           class="sidebar-link">
+                        Switches
+                    </a>
+
+
+                    <div class="sidebar-section">
+                        OPERATIONS
+                    </div>
+
+                    <a asp-controller="Workers"
+                           asp-action="Index"
+                           class="sidebar-link">
+                        Workers
+                    </a>
+
+                    <a asp-controller="SiteVisits"
+                           asp-action="Index"
+                           class="sidebar-link">
+                        Site Visits
+                    </a>
+
+                    <a asp-controller="CameraVisits"
+                           asp-action="Index"
+                           class="sidebar-link">
+                        Camera Visits
+                    </a>
+
+
+@* 
+                    <div class="sidebar-section">
+                        HISTORY
+                    </div>
+
+                    <a asp-controller="AuditLogs"
+                           asp-action="Index"
+                           class="sidebar-link">
+                        Audit History
+                    </a> *@
+
+
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <div class="sidebar-section">
+                            ADMINISTRATION
+                        </div>
+
+                        <a asp-controller="Users"
+                               asp-action="Index"
+                               class="sidebar-link">
+                            Users
+                        </a>
+                    }
+
+                </nav>
+
+            </aside>
+
+
+            <!-- MAIN AREA -->
+            <div class="app-main">
+
+                <!-- TOP BAR -->
+                <header class="app-topbar">
+
+                    <div>
+                        <h1 class="page-title">
+                            @ViewData["Title"]
+                        </h1>
+                    </div>
+
+
+                    <div class="topbar-user">
+
+                        <div class="user-avatar">
+                            @initials
+                        </div>
+
+                        <div class="user-info">
+                            <div class="user-name">
+                                @fullName
+                            </div>
+
+                            <div class="user-role">
+                                @role
+                            </div>
+                        </div>
+
+
+                        <form asp-area="Identity"
+                              asp-page="/Account/Logout"
+                              asp-route-returnUrl="@Url.Action("Index", "Home")"
+                              method="post">
+
+                            <button type="submit"
+                                    class="logout-button">
+                                Logout
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                </header>
+
+
+                <!-- PAGE CONTENT -->
+                <main class="app-content">
+
+                    @RenderBody()
+
+                </main>
+
+            </div>
+
+        </div>
+    }
+    else
+    {
+        <main class="public-content">
+            @RenderBody()
+        </main>
+    }
+
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="~/js/site.js"
+            asp-append-version="true">
+    </script>
+
+    @await RenderSectionAsync(
+        "Scripts",
+        required: false)
+
+</body>
+</html>

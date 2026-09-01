@@ -1,0 +1,164 @@
+﻿@model CameraOperationsManagement.ViewModels.RecorderHardDrives.RecorderHardDriveListViewModel
+
+@{
+    ViewData["Title"] = "Recorder Storage";
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Recorder Storage
+        </h2>
+
+        <p class="page-description">
+            @Model.RecorderName — @Model.SiteName
+        </p>
+    </div>
+
+    @if ((User.IsInRole("Admin") ||
+          User.IsInRole("Editor")) &&
+         Model.RecorderIsActive)
+    {
+        <a asp-action="Create"
+               asp-route-recorderId="@Model.RecorderId"
+               class="btn btn-primary">
+            Add HDD
+        </a>
+    }
+
+</div>
+
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+
+<div class="app-card">
+
+    <div class="app-card-header d-flex justify-content-between align-items-center">
+
+        <div>
+            <strong>Total Storage</strong>
+        </div>
+
+        <div>
+            <strong>
+                @Model.TotalStorageGb GB
+            </strong>
+        </div>
+
+    </div>
+
+
+    @if (!Model.HardDrives.Any())
+    {
+        <div class="app-card-body text-center text-muted py-5">
+            No hard drives have been added yet.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+
+            <table class="table">
+
+                <thead>
+                    <tr>
+                        <th>Capacity</th>
+                        <th>Serial Number</th>
+
+                        @if ((User.IsInRole("Admin") ||
+                              User.IsInRole("Editor")) &&
+                             Model.RecorderIsActive)
+                        {
+                            <th class="text-end">
+                                Actions
+                            </th>
+                        }
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var drive in Model.HardDrives)
+                    {
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    @drive.CapacityGb GB
+                                </strong>
+                            </td>
+
+                            <td>
+                                @if (string.IsNullOrWhiteSpace(
+                                    drive.SerialNumber))
+                                {
+                                    <span class="text-muted">
+                                        —
+                                    </span>
+                                }
+                                else
+                                {
+                                    @drive.SerialNumber
+                                }
+                            </td>
+
+
+                            @if ((User.IsInRole("Admin") ||
+                                  User.IsInRole("Editor")) &&
+                                 Model.RecorderIsActive)
+                            {
+                                <td class="text-end">
+
+                                    <div class="d-inline-flex gap-2">
+
+                                        <a asp-action="Edit"
+                                               asp-route-id="@drive.Id"
+                                               class="btn btn-sm btn-outline-secondary">
+                                            Edit
+                                        </a>
+
+                                        <form asp-action="Delete"
+                                              asp-route-id="@drive.Id"
+                                              method="post">
+
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-outline-secondary">
+                                                Remove
+                                            </button>
+
+                                        </form>
+
+                                    </div>
+
+                                </td>
+                            }
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+    }
+
+</div>
+
+
+<div class="mt-3">
+
+    <a asp-controller="Recorders"
+           asp-action="Index"
+           class="btn btn-outline-secondary">
+        Back to Recorders
+    </a>
+
+</div>

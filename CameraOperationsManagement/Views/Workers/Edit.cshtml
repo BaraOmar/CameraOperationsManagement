@@ -1,0 +1,61 @@
+﻿@model CameraOperationsManagement.ViewModels.Workers.WorkerFormViewModel
+
+@{
+    ViewData["Title"] = "Edit Worker";
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Edit Worker
+        </h2>
+
+        <p class="page-description">
+            Update the worker's information.
+        </p>
+    </div>
+
+</div>
+
+
+<div class="app-card">
+
+    <div class="app-card-body">
+
+        <form asp-action="Edit"
+              asp-route-id="@Model.Id"
+              method="post">
+
+            <input asp-for="Id"
+                   type="hidden" />
+
+
+            <partial name="_WorkerForm"
+                     model="Model" />
+
+
+            <div class="d-flex gap-2 mt-4">
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    Save Changes
+                </button>
+
+                <a asp-action="Index"
+                       class="btn btn-outline-secondary">
+                    Cancel
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

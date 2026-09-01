@@ -1,0 +1,147 @@
+﻿@model CameraOperationsManagement.ViewModels.SiteVisits.SiteVisitFormViewModel
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+<div asp-validation-summary="All"
+     class="text-danger mb-3">
+</div>
+
+
+<div class="row g-3">
+
+    <div class="col-md-6">
+
+        <label asp-for="SiteId"
+               class="form-label">
+        </label>
+
+        <select asp-for="SiteId"
+                asp-items="ViewBag.Sites"
+                class="form-select">
+
+            <option value="">
+                Select site
+            </option>
+
+        </select>
+
+        <span asp-validation-for="SiteId"
+              class="text-danger">
+        </span>
+
+    </div>
+
+
+    <div class="col-md-6">
+
+        <label asp-for="VisitDate"
+               class="form-label">
+        </label>
+
+        <input asp-for="VisitDate"
+               asp-format="{0:yyyy-MM-ddTHH:mm}"
+               type="datetime-local"
+               class="form-control" />
+
+        <span asp-validation-for="VisitDate"
+              class="text-danger">
+        </span>
+
+    </div>
+
+
+    <div class="col-12">
+
+        <label asp-for="Purpose"
+               class="form-label">
+        </label>
+
+        <input asp-for="Purpose"
+               class="form-control" />
+
+        <span asp-validation-for="Purpose"
+              class="text-danger">
+        </span>
+
+    </div>
+
+
+    <div class="col-12">
+
+        <label class="form-label">
+            Workers
+        </label>
+
+        <div class="app-card shadow-none">
+
+            <div class="app-card-body">
+
+                @{
+                    var workers =
+                        ViewBag.Workers as IEnumerable<SelectListItem>;
+                }
+
+                @if (workers == null ||
+                     !workers.Any())
+                {
+                    <div class="text-muted">
+                        No active workers are available.
+                    </div>
+                }
+                else
+                {
+                    <div class="row g-2">
+
+                        @foreach (var worker in workers)
+                        {
+                            <div class="col-md-4">
+
+                                <div class="form-check">
+
+                                    <input type="checkbox"
+                                           name="WorkerIds"
+                                           value="@worker.Value"
+                                           checked="@worker.Selected"
+                                           class="form-check-input"
+                                           id="worker_@worker.Value" />
+
+                                    <label class="form-check-label"
+                                           for="worker_@worker.Value">
+                                        @worker.Text
+                                    </label>
+
+                                </div>
+
+                            </div>
+                        }
+
+                    </div>
+                }
+
+            </div>
+
+        </div>
+
+        <span asp-validation-for="WorkerIds"
+              class="text-danger">
+        </span>
+
+    </div>
+
+
+    <div class="col-12">
+
+        <label asp-for="Notes"
+               class="form-label">
+        </label>
+
+        <textarea asp-for="Notes"
+                  class="form-control"
+                  rows="4"></textarea>
+
+        <span asp-validation-for="Notes"
+              class="text-danger">
+        </span>
+
+    </div>
+
+</div>

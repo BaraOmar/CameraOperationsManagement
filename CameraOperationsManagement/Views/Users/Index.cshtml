@@ -1,0 +1,87 @@
+﻿@model IEnumerable<CameraOperationsManagement.ViewModels.Users.UserListItemViewModel>
+
+@{
+    ViewData["Title"] = "Users";
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Users
+        </h2>
+
+        <p class="page-description">
+            Manage system users and their assigned roles.
+        </p>
+    </div>
+
+    <a asp-action="Create"
+           class="btn btn-primary">
+        Create User
+    </a>
+
+</div>
+
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+
+<div class="app-card">
+
+    @if (!Model.Any())
+    {
+        <div class="app-card-body text-center text-muted py-5">
+            No users have been created yet.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+
+            <table class="table">
+
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>
+                                <strong>
+                                    @user.FullName
+                                </strong>
+                            </td>
+
+                            <td>
+                                @user.Email
+                            </td>
+
+                            <td>
+                                <span class="badge text-bg-secondary">
+                                    @user.Role
+                                </span>
+                            </td>
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+    }
+
+</div>

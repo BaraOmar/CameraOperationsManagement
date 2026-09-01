@@ -1,0 +1,56 @@
+﻿@model CameraOperationsManagement.ViewModels.Workers.WorkerFormViewModel
+
+@{
+    ViewData["Title"] = "Add Worker";
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Add Worker
+        </h2>
+
+        <p class="page-description">
+            Add a worker who can participate in operational activities.
+        </p>
+    </div>
+
+</div>
+
+
+<div class="app-card">
+
+    <div class="app-card-body">
+
+        <form asp-action="Create"
+              method="post">
+
+            <partial name="_WorkerForm"
+                     model="Model" />
+
+
+            <div class="d-flex gap-2 mt-4">
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    Add Worker
+                </button>
+
+                <a asp-action="Index"
+                       class="btn btn-outline-secondary">
+                    Cancel
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

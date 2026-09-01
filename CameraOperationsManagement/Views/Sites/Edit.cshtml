@@ -1,0 +1,83 @@
+﻿@model CameraOperationsManagement.ViewModels.Sites.EditSiteViewModel
+
+@{
+    ViewData["Title"] = "Edit Site";
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Edit Site
+        </h2>
+
+        <p class="page-description">
+            Update the site's information.
+        </p>
+    </div>
+
+</div>
+
+
+<div class="app-card">
+
+    <div class="app-card-body">
+
+        <form asp-action="Edit"
+              asp-route-id="@Model.Id"
+              method="post">
+
+            <input asp-for="Id"
+                   type="hidden" />
+
+
+            <div asp-validation-summary="ModelOnly"
+                 class="text-danger mb-3">
+            </div>
+
+
+            <div class="mb-4">
+
+                <label class="form-label">
+                    Site ID
+                </label>
+
+                <input value="@Model.Id"
+                       class="form-control"
+                       disabled />
+
+                <div class="form-text">
+                    Site ID cannot be changed.
+                </div>
+
+            </div>
+
+
+            <partial name="_SiteForm"
+                     model="Model" />
+
+
+            <div class="d-flex gap-2 mt-4">
+
+                <button type="submit"
+                        class="btn btn-primary">
+                    Save Changes
+                </button>
+
+                <a asp-action="Index"
+                       class="btn btn-outline-secondary">
+                    Cancel
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

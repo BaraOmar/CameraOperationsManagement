@@ -1,0 +1,124 @@
+﻿@model CameraOperationsManagement.ViewModels.Recorders.RecorderFormViewModel
+@using CameraOperationsManagement.Models
+
+<div asp-validation-summary="ModelOnly"
+     class="text-danger mb-3">
+</div>
+
+<div class="row g-3">
+
+    <div class="col-md-6">
+
+        <label asp-for="Name"
+               class="form-label">
+        </label>
+
+        <input asp-for="Name"
+               class="form-control"
+               autocomplete="off" />
+
+        <span asp-validation-for="Name"
+              class="text-danger">
+        </span>
+
+    </div>
+
+
+    <div class="col-md-6">
+
+        <label asp-for="Type"
+               class="form-label">
+        </label>
+
+        <select asp-for="Type"
+                class="form-select">
+
+            <option value="">
+                Select recorder type
+            </option>
+
+            <option value="@RecorderType.NVR">
+                NVR
+            </option>
+
+            <option value="@RecorderType.DVR">
+                DVR
+            </option>
+
+        </select>
+
+        <span asp-validation-for="Type"
+              class="text-danger">
+        </span>
+
+    </div>
+
+
+    <div class="col-md-6">
+
+        <label asp-for="SiteId"
+               class="form-label">
+        </label>
+
+        <select asp-for="SiteId"
+                asp-items="ViewBag.Sites"
+                class="form-select"
+                id="siteSelect">
+
+            <option value="">
+                Select site
+            </option>
+
+        </select>
+
+        <span asp-validation-for="SiteId"
+              class="text-danger">
+        </span>
+
+    </div>
+
+
+    <div class="col-md-6">
+
+        <label asp-for="NetworkSwitchId"
+               class="form-label">
+        </label>
+
+        <select asp-for="NetworkSwitchId"
+                asp-items="ViewBag.Switches"
+                class="form-select"
+                id="switchSelect">
+
+            <option value="">
+                No switch
+            </option>
+
+        </select>
+
+        <span asp-validation-for="NetworkSwitchId"
+              class="text-danger">
+        </span>
+
+    </div>
+
+
+    <div class="col-12">
+
+        <div class="form-check">
+
+            <input asp-for="HasStorage"
+                   class="form-check-input" />
+
+            <label asp-for="HasStorage"
+                   class="form-check-label">
+            </label>
+
+        </div>
+
+        <div class="form-text">
+            HDDs can be managed after the recorder is created.
+        </div>
+
+    </div>
+
+</div>

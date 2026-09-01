@@ -1,0 +1,217 @@
+﻿@model IEnumerable<CameraOperationsManagement.ViewModels.Recorders.RecorderListItemViewModel>
+
+@{
+    ViewData["Title"] = "Recorders";
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Recorders
+        </h2>
+
+        <p class="page-description">
+            View and manage NVR and DVR recorders.
+        </p>
+    </div>
+
+    @if (User.IsInRole("Admin") ||
+         User.IsInRole("Editor"))
+    {
+        <a asp-action="Create"
+               class="btn btn-primary">
+            Add Recorder
+        </a>
+    }
+
+</div>
+
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+
+<div class="app-card">
+
+    @if (!Model.Any())
+    {
+        <div class="app-card-body text-center text-muted py-5">
+            No recorders have been added yet.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+
+            <table class="table">
+
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Site</th>
+                        <th>Switch</th>
+                        <th>Storage</th>
+                        <th>Status</th>
+
+                        @if (User.IsInRole("Admin") ||
+                             User.IsInRole("Editor"))
+                        {
+                            <th class="text-end">
+                                Actions
+                            </th>
+                        }
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var recorder in Model)
+                    {
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    @recorder.Name
+                                </strong>
+                            </td>
+
+
+                            <td>
+                                <span class="badge text-bg-secondary">
+                                    @recorder.Type
+                                </span>
+                            </td>
+
+
+                            <td>
+                                <div>
+                                    @recorder.SiteName
+                                </div>
+
+                                <small class="text-muted">
+                                    @recorder.SiteId
+                                </small>
+                            </td>
+
+
+                            <td>
+                                @if (string.IsNullOrWhiteSpace(
+                                    recorder.NetworkSwitchName))
+                                {
+                                    <span class="text-muted">
+                                        —
+                                    </span>
+                                }
+                                else
+                                {
+                                    @recorder.NetworkSwitchName
+                                }
+                            </td>
+
+
+                            <td>
+                                @if (!recorder.HasStorage)
+                                {
+                                    <span class="text-muted">
+                                        No storage
+                                    </span>
+                                }
+                                else if (recorder.TotalStorageGb == 0)
+                                {
+                                    <span class="text-muted">
+                                        No HDDs added
+                                    </span>
+                                }
+                                else
+                                {
+                                    <strong>
+                                        @recorder.TotalStorageGb GB
+                                    </strong>
+                                }
+                            </td>
+
+
+                            <td>
+                                @if (recorder.IsActive)
+                                {
+                                    <span class="badge bg-success-subtle text-success">
+                                        Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary">
+                                        Inactive
+                                    </span>
+                                }
+                            </td>
+
+
+                            @if (User.IsInRole("Admin") ||
+                                 User.IsInRole("Editor"))
+                            {
+                                <td class="text-end">
+
+                                    <div class="d-inline-flex gap-2">
+                                        @if (recorder.HasStorage)
+                                        {
+                                            <a asp-controller="RecorderHardDrives"
+                                                   asp-action="Index"
+                                                   asp-route-recorderId="@recorder.Id"
+                                                   class="btn btn-sm btn-outline-secondary">
+                                                Storage
+                                            </a>
+                                        }
+                                        <a asp-action="Edit"
+                                               asp-route-id="@recorder.Id"
+                                               class="btn btn-sm btn-outline-secondary">
+                                            Edit
+                                        </a>
+
+
+                                        @if (User.IsInRole("Admin"))
+                                        {
+                                            <form asp-action="ToggleStatus"
+                                                  asp-route-id="@recorder.Id"
+                                                  method="post">
+
+                                                @if (recorder.IsActive)
+                                                {
+                                                    <button type="submit"
+                                                            class="btn btn-sm btn-outline-secondary">
+                                                        Deactivate
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="submit"
+                                                            class="btn btn-sm btn-outline-secondary">
+                                                        Activate
+                                                    </button>
+                                                }
+
+                                            </form>
+                                        }
+
+                                    </div>
+
+                                </td>
+                            }
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+    }
+
+</div>

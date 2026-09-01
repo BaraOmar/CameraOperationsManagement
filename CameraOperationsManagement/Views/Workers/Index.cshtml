@@ -1,0 +1,149 @@
+﻿@model IEnumerable<CameraOperationsManagement.ViewModels.Workers.WorkerListItemViewModel>
+
+@{
+    ViewData["Title"] = "Workers";
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Workers
+        </h2>
+
+        <p class="page-description">
+            View and manage workers involved in operational activities.
+        </p>
+    </div>
+
+    @if (User.IsInRole("Admin"))
+    {
+        <a asp-action="Create"
+               class="btn btn-primary">
+            Add Worker
+        </a>
+    }
+
+</div>
+
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+
+<div class="app-card">
+
+    @if (!Model.Any())
+    {
+        <div class="app-card-body text-center text-muted py-5">
+            No workers have been added yet.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+
+            <table class="table">
+
+                <thead>
+                    <tr>
+                        <th>Worker</th>
+                        <th>Status</th>
+
+                        <th class="text-end">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var worker in Model)
+                    {
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    @worker.FullName
+                                </strong>
+                            </td>
+
+
+                            <td>
+                                @if (worker.IsActive)
+                                {
+                                    <span class="badge bg-success-subtle text-success">
+                                        Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary">
+                                        Inactive
+                                    </span>
+                                }
+                            </td>
+
+
+                            <td class="text-end">
+
+                                <div class="d-inline-flex gap-2">
+
+                                    <!-- Available to all roles -->
+                                    <a asp-action="History"
+                                           asp-route-id="@worker.Id"
+                                           class="btn btn-sm btn-outline-secondary">
+                                        History
+                                    </a>
+
+
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <a asp-action="Edit"
+                                               asp-route-id="@worker.Id"
+                                               class="btn btn-sm btn-outline-secondary">
+                                            Edit
+                                        </a>
+
+
+                                        <form asp-action="ToggleStatus"
+                                              asp-route-id="@worker.Id"
+                                              method="post">
+
+                                            @if (worker.IsActive)
+                                            {
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-secondary">
+                                                    Deactivate
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-secondary">
+                                                    Activate
+                                                </button>
+                                            }
+
+                                        </form>
+                                    }
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+    }
+
+</div>

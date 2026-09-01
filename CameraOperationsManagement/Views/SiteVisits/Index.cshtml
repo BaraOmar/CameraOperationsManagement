@@ -1,0 +1,133 @@
+﻿@model IEnumerable<CameraOperationsManagement.ViewModels.SiteVisits.SiteVisitListItemViewModel>
+
+@{
+    ViewData["Title"] = "Site Visits";
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Site Visits
+        </h2>
+
+        <p class="page-description">
+            View and record operational visits to sites.
+        </p>
+    </div>
+
+    @if (User.IsInRole("Admin") ||
+         User.IsInRole("Editor"))
+    {
+        <a asp-action="Create"
+               class="btn btn-primary">
+            Record Site Visit
+        </a>
+    }
+
+</div>
+
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+
+<div class="app-card">
+
+    @if (!Model.Any())
+    {
+        <div class="app-card-body text-center text-muted py-5">
+            No site visits have been recorded yet.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+
+            <table class="table">
+
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Site</th>
+                        <th>Purpose</th>
+                        <th>Workers</th>
+
+                        @if (User.IsInRole("Admin") ||
+                             User.IsInRole("Editor"))
+                        {
+                            <th class="text-end">
+                                Actions
+                            </th>
+                        }
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var visit in Model)
+                    {
+                        <tr>
+
+                            <td>
+                                @visit.VisitDate.ToString("dd/MM/yyyy HH:mm")
+                            </td>
+
+                            <td>
+                                <div>
+                                    <strong>
+                                        @visit.SiteName
+                                    </strong>
+                                </div>
+
+                                <small class="text-muted">
+                                    @visit.SiteId
+                                </small>
+                            </td>
+
+                            <td>
+                                @visit.Purpose
+                            </td>
+
+                            <td>
+                                @if (visit.WorkerNames.Any())
+                                {
+                                    @string.Join(", ", visit.WorkerNames)
+                                }
+                                else
+                                {
+                                    <span class="text-muted">
+                                        —
+                                    </span>
+                                }
+                            </td>
+
+                            @if (User.IsInRole("Admin") ||
+                                 User.IsInRole("Editor"))
+                            {
+                                <td class="text-end">
+
+                                    <a asp-action="Edit"
+                                           asp-route-id="@visit.Id"
+                                           class="btn btn-sm btn-outline-secondary">
+                                        Edit
+                                    </a>
+
+                                </td>
+                            }
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+    }
+
+</div>

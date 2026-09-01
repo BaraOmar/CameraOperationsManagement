@@ -1,0 +1,48 @@
+﻿@model CameraOperationsManagement.ViewModels.NetworkSwitches.NetworkSwitchFormViewModel
+
+<div asp-validation-summary="ModelOnly"
+     class="text-danger mb-3">
+</div>
+
+<div class="row g-3">
+
+    <div class="col-md-6">
+
+        <label asp-for="Name"
+               class="form-label">
+        </label>
+
+        <input asp-for="Name"
+               class="form-control"
+               autocomplete="off" />
+
+        <span asp-validation-for="Name"
+              class="text-danger">
+        </span>
+
+    </div>
+
+
+    <div class="col-md-6">
+
+        <label asp-for="SiteId"
+               class="form-label">
+        </label>
+
+        <select asp-for="SiteId"
+                asp-items="ViewBag.Sites"
+                class="form-select">
+
+            <option value="">
+                Select site
+            </option>
+
+        </select>
+
+        <span asp-validation-for="SiteId"
+              class="text-danger">
+        </span>
+
+    </div>
+
+</div>
