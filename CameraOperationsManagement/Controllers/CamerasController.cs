@@ -29,39 +29,73 @@ namespace CameraOperationsManagement.Controllers
         // =====================================================
 
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            string? search,
+            string? siteId,
+            int? recorderId,
+            string? cameraType,
+            int? switchId,
+            string? status)
         {
-            var cameras = await _context.Cameras
-                .AsNoTracking()
-                .OrderBy(c => c.Recorder.Site.Name)
-                .ThenBy(c => c.Recorder.Name)
-                .ThenBy(c => c.Name)
-                .Select(c => new CameraListItemViewModel
-                {
-                    Id = c.Id,
-                    Name = c.Name,
-                    Brand = c.Brand,
-                    Model = c.Model,
-                    Type = c.Type,
-                    IpAddress = c.IpAddress,
+            var query = BuildCameraFilterQuery(
+                search,
+                siteId,
+                recorderId,
+                cameraType,
+                switchId,
+                status);
 
-                    InstallationLocation =
-                        c.InstallationLocation,
 
-                    RecorderId = c.RecorderId,
-                    RecorderName = c.Recorder.Name,
+            var cameras = await query
+                .OrderBy(c => c.Name)
+                .Select(c =>
+                    new CameraListItemViewModel
+                    {
+                        Id = c.Id,
 
-                    SiteId = c.Recorder.SiteId,
-                    SiteName = c.Recorder.Site.Name,
+                        Name = c.Name,
 
-                    NetworkSwitchName =
-                        c.NetworkSwitch != null
-                            ? c.NetworkSwitch.Name
-                            : null,
+                        Brand = c.Brand,
 
-                    IsActive = c.IsActive
-                })
+                        Model = c.Model,
+
+                        Type = c.Type,
+
+                        IpAddress = c.IpAddress,
+
+                        InstallationLocation =
+                            c.InstallationLocation,
+
+                        RecorderName =
+                            c.Recorder.Name,
+
+                        SiteId =
+                            c.Recorder.SiteId,
+
+                        SiteName =
+                            c.Recorder.Site.Name,
+
+                        NetworkSwitchName =
+                            c.NetworkSwitch != null
+                                ? c.NetworkSwitch.Name
+                                : null,
+
+                        IsActive =
+                            c.IsActive
+                    })
                 .ToListAsync();
+
+
+            await LoadIndexFiltersAsync(
+                siteId,
+                recorderId,
+                cameraType,
+                switchId);
+
+
+            ViewBag.Search = search;
+            ViewBag.Status = status;
+
 
             return View(cameras);
         }
@@ -562,10 +596,12 @@ namespace CameraOperationsManagement.Controllers
             var fileName =
                 $"Camera-History-{camera.CameraId}.pdf";
 
+            Response.Headers.ContentDisposition =
+                $"inline; filename=\"{fileName}\"";
+
             return File(
                 pdfBytes,
-                "application/pdf",
-                fileName);
+                "application/pdf");
         }
         private async Task<CameraHistoryViewModel?>
     GetCameraHistoryAsync(int id)
@@ -656,6 +692,231 @@ namespace CameraOperationsManagement.Controllers
                         .ToList()
                 })
                 .FirstOrDefaultAsync();
+        }
+        private async Task LoadIndexFiltersAsync(
+    string? siteId,
+    int? recorderId,
+    string? cameraType,
+    int? switchId)
+        {
+            // SITES
+            ViewBag.FilterSites =
+                new SelectList(
+                    await _context.Sites
+                        .AsNoTracking()
+                        .OrderBy(s => s.Name)
+                        .Select(s => new
+                        {
+                            s.Id,
+
+                            DisplayName =
+                                s.Name + " (" + s.Id + ")"
+                        })
+                        .ToListAsync(),
+                    "Id",
+                    "DisplayName",
+                    siteId);
+
+
+            // RECORDERS
+            ViewBag.FilterRecorders =
+                new SelectList(
+                    await _context.Recorders
+                        .AsNoTracking()
+                        .OrderBy(r => r.Name)
+                        .Select(r => new
+                        {
+                            r.Id,
+
+                            DisplayName =
+                                r.Name + " — " +
+                                r.Site.Name
+                        })
+                        .ToListAsync(),
+                    "Id",
+                    "DisplayName",
+                    recorderId);
+
+
+            // CAMERA TYPES
+            var types = await _context.Cameras
+                .AsNoTracking()
+                .Where(c =>
+                    c.Type != null &&
+                    c.Type != "")
+                .Select(c => c.Type!)
+                .Distinct()
+                .OrderBy(t => t)
+                .ToListAsync();
+
+            ViewBag.FilterTypes =
+                new SelectList(
+                    types,
+                    cameraType);
+
+
+            // SWITCHES
+            ViewBag.FilterSwitches =
+                new SelectList(
+                    await _context.NetworkSwitches
+                        .AsNoTracking()
+                        .OrderBy(s => s.Name)
+                        .Select(s => new
+                        {
+                            s.Id,
+
+                            DisplayName =
+                                s.Name + " — " +
+                                s.Site.Name
+                        })
+                        .ToListAsync(),
+                    "Id",
+                    "DisplayName",
+                    switchId);
+        }
+        private IQueryable<Camera> BuildCameraFilterQuery(
+            string? search,
+            string? siteId,
+            int? recorderId,
+            string? cameraType,
+            int? switchId,
+            string? status)
+        {
+            var query = _context.Cameras
+                .AsNoTracking()
+                .AsQueryable();
+
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.Trim();
+
+                query = query.Where(c =>
+                    c.Name.Contains(search) ||
+                    (c.Brand != null &&
+                     c.Brand.Contains(search)) ||
+                    (c.Model != null &&
+                     c.Model.Contains(search)) ||
+                    (c.SerialNumber != null &&
+                     c.SerialNumber.Contains(search)) ||
+                    (c.Type != null &&
+                     c.Type.Contains(search)) ||
+                    (c.IpAddress != null &&
+                     c.IpAddress.Contains(search)) ||
+                    c.InstallationLocation.Contains(search));
+            }
+
+
+            if (!string.IsNullOrWhiteSpace(siteId))
+            {
+                query = query.Where(c =>
+                    c.Recorder.SiteId == siteId);
+            }
+
+
+            if (recorderId.HasValue)
+            {
+                query = query.Where(c =>
+                    c.RecorderId == recorderId.Value);
+            }
+
+
+            if (!string.IsNullOrWhiteSpace(cameraType))
+            {
+                query = query.Where(c =>
+                    c.Type == cameraType);
+            }
+
+
+            if (switchId.HasValue)
+            {
+                query = query.Where(c =>
+                    c.NetworkSwitchId == switchId.Value);
+            }
+
+
+            if (status == "active")
+            {
+                query = query.Where(c =>
+                    c.IsActive);
+            }
+            else if (status == "inactive")
+            {
+                query = query.Where(c =>
+                    !c.IsActive);
+            }
+
+
+            return query;
+        }
+        [HttpGet]
+        public async Task<IActionResult> ExportPdf(
+    string? search,
+    string? siteId,
+    int? recorderId,
+    string? cameraType,
+    int? switchId,
+    string? status)
+        {
+            var query = BuildCameraFilterQuery(
+                search,
+                siteId,
+                recorderId,
+                cameraType,
+                switchId,
+                status);
+
+
+            var cameras = await query
+                .OrderBy(c => c.Name)
+                .Select(c => new CameraListItemViewModel
+                {
+                    Id = c.Id,
+
+                    Name = c.Name,
+
+                    Brand = c.Brand,
+
+                    Model = c.Model,
+
+                    Type = c.Type,
+
+                    IpAddress = c.IpAddress,
+
+                    InstallationLocation =
+                        c.InstallationLocation,
+
+                    RecorderName =
+                        c.Recorder.Name,
+
+                    SiteId =
+                        c.Recorder.SiteId,
+
+                    SiteName =
+                        c.Recorder.Site.Name,
+
+                    NetworkSwitchName =
+                        c.NetworkSwitch != null
+                            ? c.NetworkSwitch.Name
+                            : null,
+
+                    IsActive =
+                        c.IsActive
+                })
+                .ToListAsync();
+
+
+            var pdfBytes =
+                _pdfService.GenerateCameraListPdf(cameras);
+
+
+            Response.Headers.ContentDisposition =
+                "inline; filename=\"Camera-Report.pdf\"";
+
+
+            return File(
+                pdfBytes,
+                "application/pdf");
         }
     }
 }

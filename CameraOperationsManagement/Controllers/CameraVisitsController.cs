@@ -22,62 +22,153 @@ namespace CameraOperationsManagement.Controllers
 
         // GET: CameraVisits
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            string? search,
+            string? siteId,
+            int? cameraId,
+            int? workerId,
+            DateTime? fromDate,
+            DateTime? toDate)
         {
-            var visits = await _context.CameraVisits
+            var query = _context.CameraVisits
                 .AsNoTracking()
+                .AsQueryable();
+
+
+            // SITE
+            if (!string.IsNullOrWhiteSpace(siteId))
+            {
+                query = query.Where(v =>
+                    v.Camera.Recorder.SiteId == siteId);
+            }
+
+
+            // CAMERA
+            if (cameraId.HasValue)
+            {
+                query = query.Where(v =>
+                    v.CameraId == cameraId.Value);
+            }
+
+
+            // WORKER
+            if (workerId.HasValue)
+            {
+                query = query.Where(v =>
+                    v.CameraVisitWorkers.Any(vw =>
+                        vw.WorkerId == workerId.Value));
+            }
+
+
+            // FROM DATE
+            if (fromDate.HasValue)
+            {
+                query = query.Where(v =>
+                    v.VisitDate >= fromDate.Value.Date);
+            }
+
+
+            // TO DATE
+            if (toDate.HasValue)
+            {
+                var endDate =
+                    toDate.Value.Date.AddDays(1);
+
+                query = query.Where(v =>
+                    v.VisitDate < endDate);
+            }
+
+
+            // SEARCH
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.Trim();
+
+                query = query.Where(v =>
+                    v.Camera.Name.Contains(search) ||
+                    v.Purpose.Contains(search) ||
+                    v.Camera.Recorder.Site.Name.Contains(search) ||
+                    (v.MalfunctionType != null &&
+                     v.MalfunctionType.Contains(search)) ||
+                    (v.MalfunctionDescription != null &&
+                     v.MalfunctionDescription.Contains(search)) ||
+                    (v.RepairResult != null &&
+                     v.RepairResult.Contains(search)) ||
+                    (v.RepairWorkPerformed != null &&
+                     v.RepairWorkPerformed.Contains(search)));
+            }
+
+
+            var visits = await query
                 .OrderByDescending(v => v.VisitDate)
-                .Select(v => new CameraVisitListItemViewModel
-                {
-                    Id = v.Id,
+                .Select(v =>
+                    new CameraVisitListItemViewModel
+                    {
+                        Id = v.Id,
 
-                    CameraId = v.CameraId,
+                        CameraId = v.CameraId,
 
-                    CameraName =
-                        v.Camera.Name,
+                        CameraName =
+                            v.Camera.Name,
 
-                    RecorderName =
-                        v.Camera.Recorder.Name,
+                        RecorderName =
+                            v.Camera.Recorder.Name,
 
-                    SiteName =
-                        v.Camera.Recorder.Site.Name,
+                        SiteName =
+                            v.Camera.Recorder.Site.Name,
 
-                    VisitDate =
-                        v.VisitDate,
+                        VisitDate =
+                            v.VisitDate,
 
-                    Purpose =
-                        v.Purpose,
+                        Purpose =
+                            v.Purpose,
 
-                    WorkerNames =
-                        v.CameraVisitWorkers
-                            .OrderBy(vw =>
-                                vw.Worker.FirstName)
-                            .ThenBy(vw =>
-                                vw.Worker.SecondName)
-                            .ThenBy(vw =>
-                                vw.Worker.LastName)
-                            .Select(vw =>
-                                vw.Worker.FirstName + " " +
-                                vw.Worker.SecondName + " " +
-                                vw.Worker.LastName)
-                            .ToList(),
-                    MalfunctionType =
-    v.MalfunctionType,
+                        MalfunctionType =
+                            v.MalfunctionType,
 
-                    MalfunctionDescription =
-    v.MalfunctionDescription,
+                        MalfunctionDescription =
+                            v.MalfunctionDescription,
 
-                    RepairWorkPerformed =
-    v.RepairWorkPerformed,
+                        RepairWorkPerformed =
+                            v.RepairWorkPerformed,
 
-                    RepairResult =
-    v.RepairResult,
-                })
+                        RepairResult =
+                            v.RepairResult,
+
+                        WorkerNames =
+                            v.CameraVisitWorkers
+                                .OrderBy(vw =>
+                                    vw.Worker.FirstName)
+                                .ThenBy(vw =>
+                                    vw.Worker.SecondName)
+                                .ThenBy(vw =>
+                                    vw.Worker.LastName)
+                                .Select(vw =>
+                                    vw.Worker.FirstName + " " +
+                                    vw.Worker.SecondName + " " +
+                                    vw.Worker.LastName)
+                                .ToList()
+                    })
                 .ToListAsync();
+
+
+            await LoadIndexFiltersAsync(
+                siteId,
+                cameraId,
+                workerId);
+
+
+            ViewBag.Search = search;
+
+            ViewBag.FromDate =
+                fromDate?.ToString("yyyy-MM-dd");
+
+            ViewBag.ToDate =
+                toDate?.ToString("yyyy-MM-dd");
+
 
             return View(visits);
         }
-
 
         // GET: CameraVisits/Create
         [Authorize(Roles = "Admin,Editor")]
@@ -588,6 +679,66 @@ namespace CameraOperationsManagement.Controllers
             }
 
             return View(visit);
+        }
+        private async Task LoadIndexFiltersAsync(
+    string? siteId,
+    int? cameraId,
+    int? workerId)
+        {
+            ViewBag.Sites =
+                new SelectList(
+                    await _context.Sites
+                        .AsNoTracking()
+                        .OrderBy(s => s.Name)
+                        .Select(s => new
+                        {
+                            s.Id,
+                            DisplayName =
+                                s.Name + " (" + s.Id + ")"
+                        })
+                        .ToListAsync(),
+                    "Id",
+                    "DisplayName",
+                    siteId);
+
+
+            ViewBag.FilterCameras =
+                new SelectList(
+                    await _context.Cameras
+                        .AsNoTracking()
+                        .OrderBy(c => c.Name)
+                        .Select(c => new
+                        {
+                            c.Id,
+                            DisplayName =
+                                c.Name + " — " +
+                                c.Recorder.Site.Name
+                        })
+                        .ToListAsync(),
+                    "Id",
+                    "DisplayName",
+                    cameraId);
+
+
+            ViewBag.FilterWorkers =
+                new SelectList(
+                    await _context.Workers
+                        .AsNoTracking()
+                        .OrderBy(w => w.FirstName)
+                        .ThenBy(w => w.SecondName)
+                        .ThenBy(w => w.LastName)
+                        .Select(w => new
+                        {
+                            w.Id,
+                            FullName =
+                                w.FirstName + " " +
+                                w.SecondName + " " +
+                                w.LastName
+                        })
+                        .ToListAsync(),
+                    "Id",
+                    "FullName",
+                    workerId);
         }
     }
 }

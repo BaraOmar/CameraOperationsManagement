@@ -16,10 +16,21 @@
         </p>
     </div>
 
-    <a asp-action="Index"
-           class="btn btn-outline-secondary">
-        Back to Sites
-    </a>
+    <div class="d-flex gap-2">
+
+        <a asp-action="ExportHistoryPdf"
+               asp-route-id="@Model.SiteId"
+               target="_blank"
+               class="btn btn-primary">
+            View PDF
+        </a>
+
+        <a asp-action="Index"
+               class="btn btn-outline-secondary">
+            Back to Sites
+        </a>
+
+    </div>
 
 </div>
 

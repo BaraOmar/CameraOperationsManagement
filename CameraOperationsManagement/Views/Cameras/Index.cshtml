@@ -14,14 +14,31 @@
         </p>
     </div>
 
-    @if (User.IsInRole("Admin") ||
-         User.IsInRole("Editor"))
-    {
-        <a asp-action="Create"
-               class="btn btn-primary">
-            Add Camera
+    <div class="d-flex gap-2">
+
+        <a asp-action="ExportPdf"
+               asp-route-search="@ViewBag.Search"
+               asp-route-siteId="@Context.Request.Query["siteId"]"
+               asp-route-recorderId="@Context.Request.Query["recorderId"]"
+               asp-route-cameraType="@Context.Request.Query["cameraType"]"
+               asp-route-switchId="@Context.Request.Query["switchId"]"
+               asp-route-status="@ViewBag.Status"
+               target="_blank"
+               class="btn btn-outline-secondary">
+            View PDF
         </a>
-    }
+
+
+        @if (User.IsInRole("Admin") ||
+             User.IsInRole("Editor"))
+        {
+            <a asp-action="Create"
+                   class="btn btn-primary">
+                Add Camera
+            </a>
+        }
+
+    </div>
 
 </div>
 
@@ -33,7 +50,165 @@
     </div>
 }
 
+<form method="get"
+      asp-action="Index"
+      class="app-card mb-4">
 
+    <div class="app-card-body">
+
+        <div class="row g-3 align-items-end">
+
+
+            <!-- SEARCH -->
+            <div class="col-xl-4 col-md-6">
+
+                <label class="form-label">
+                    Search
+                </label>
+
+                <input type="text"
+                       name="search"
+                       value="@ViewBag.Search"
+                       class="form-control"
+                       placeholder="Name, brand, model, IP, location..." />
+
+            </div>
+
+
+            <!-- SITE -->
+            <div class="col-xl-4 col-md-6">
+
+                <label class="form-label">
+                    Site
+                </label>
+
+                <select name="siteId"
+                        asp-items="ViewBag.FilterSites"
+                        class="form-select">
+
+                    <option value="">
+                        All sites
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- RECORDER -->
+            <div class="col-xl-4 col-md-6">
+
+                <label class="form-label">
+                    Recorder
+                </label>
+
+                <select name="recorderId"
+                        asp-items="ViewBag.FilterRecorders"
+                        class="form-select">
+
+                    <option value="">
+                        All recorders
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- TYPE -->
+            <div class="col-xl-3 col-md-6">
+
+                <label class="form-label">
+                    Camera Type
+                </label>
+
+                <select name="cameraType"
+                        asp-items="ViewBag.FilterTypes"
+                        class="form-select">
+
+                    <option value="">
+                        All types
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- SWITCH -->
+            <div class="col-xl-3 col-md-6">
+
+                <label class="form-label">
+                    Switch
+                </label>
+
+                <select name="switchId"
+                        asp-items="ViewBag.FilterSwitches"
+                        class="form-select">
+
+                    <option value="">
+                        All switches
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- STATUS -->
+            <div class="col-xl-3 col-md-6">
+
+                <label class="form-label">
+                    Status
+                </label>
+
+                <select name="status"
+                        class="form-select">
+
+                    <option value=""
+                            selected="@(ViewBag.Status == null)">
+                        All statuses
+                    </option>
+
+                    <option value="active"
+                            selected="@(ViewBag.Status == "active")">
+                        Active
+                    </option>
+
+                    <option value="inactive"
+                            selected="@(ViewBag.Status == "inactive")">
+                        Inactive
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- ACTIONS -->
+            <div class="col-xl-3 col-md-6">
+
+                <div class="d-flex gap-2">
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Apply Filters
+                    </button>
+
+                    <a asp-action="Index"
+                           class="btn btn-outline-secondary">
+                        Clear
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</form>
 <div class="app-card">
 
     @if (!Model.Any())

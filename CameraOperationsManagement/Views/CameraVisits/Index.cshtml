@@ -36,7 +36,144 @@
     </div>
 }
 
+<form method="get"
+      asp-action="Index"
+      class="app-card mb-4">
 
+    <div class="app-card-body">
+
+        <div class="row g-3 align-items-end">
+
+            <!-- SEARCH -->
+            <div class="col-lg-4 col-md-6">
+
+                <label class="form-label">
+                    Search
+                </label>
+
+                <input type="text"
+                       name="search"
+                       value="@ViewBag.Search"
+                       class="form-control"
+                       placeholder="Camera, purpose, malfunction, repair..." />
+
+            </div>
+
+
+            <!-- SITE -->
+            <div class="col-lg-4 col-md-6">
+
+                <label class="form-label">
+                    Site
+                </label>
+
+                <select name="siteId"
+                        asp-items="ViewBag.Sites"
+                        class="form-select">
+
+                    <option value="">
+                        All sites
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- CAMERA -->
+            <div class="col-lg-4 col-md-6">
+
+                <label class="form-label">
+                    Camera
+                </label>
+
+                <select name="cameraId"
+                        asp-items="ViewBag.FilterCameras"
+                        class="form-select">
+
+                    <option value="">
+                        All cameras
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- WORKER -->
+            <div class="col-lg-4 col-md-6">
+
+                <label class="form-label">
+                    Worker
+                </label>
+
+                <select name="workerId"
+                        asp-items="ViewBag.FilterWorkers"
+                        class="form-select">
+
+                    <option value="">
+                        All workers
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- FROM DATE -->
+            <div class="col-lg-2 col-md-6">
+
+                <label class="form-label">
+                    From
+                </label>
+
+                <input type="date"
+                       name="fromDate"
+                       value="@ViewBag.FromDate"
+                       class="form-control" />
+
+            </div>
+
+
+            <!-- TO DATE -->
+            <div class="col-lg-2 col-md-6">
+
+                <label class="form-label">
+                    To
+                </label>
+
+                <input type="date"
+                       name="toDate"
+                       value="@ViewBag.ToDate"
+                       class="form-control" />
+
+            </div>
+
+
+            <!-- ACTIONS -->
+            <div class="col-lg-4 col-md-12">
+
+                <div class="d-flex gap-2">
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Apply Filters
+                    </button>
+
+                    <a asp-action="Index"
+                           class="btn btn-outline-secondary">
+                        Clear
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</form>
 <div class="app-card">
 
     @if (!Model.Any())

@@ -577,3 +577,92 @@ body {
     .dashboard-stat-link:hover .arrow {
         transform: translateX(3px);
     }
+/* =========================
+   LOGIN PAGE
+   ========================= */
+
+.login-page {
+    min-height: calc(100vh - 80px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 440px;
+    background: #ffffff;
+    border: 1px solid #dde5e5;
+    border-radius: 16px;
+    padding: 34px;
+    box-shadow: 0 12px 35px rgba(23, 35, 39, 0.08);
+}
+
+.login-brand {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    margin-bottom: 34px;
+}
+
+.login-brand-mark {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #172327;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.login-brand h1 {
+    margin: 0;
+    color: #172327;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.login-brand p {
+    margin: 2px 0 0;
+    color: #7b888a;
+    font-size: 0.8rem;
+}
+
+.login-heading {
+    margin-bottom: 26px;
+}
+
+    .login-heading h2 {
+        margin: 0 0 7px;
+        color: #172327;
+        font-size: 1.55rem;
+        font-weight: 700;
+    }
+
+    .login-heading p {
+        margin: 0;
+        color: #788587;
+        font-size: 0.9rem;
+    }
+
+.login-card .form-control {
+    min-height: 46px;
+}
+
+.login-button {
+    min-height: 46px;
+    font-weight: 600;
+}
+
+.login-footer {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #edf1f1;
+    text-align: center;
+    color: #929c9e;
+    font-size: 0.78rem;
+}

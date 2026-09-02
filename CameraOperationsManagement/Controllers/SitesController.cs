@@ -1,5 +1,6 @@
 ﻿using CameraOperationsManagement.Data;
 using CameraOperationsManagement.Models;
+using CameraOperationsManagement.Services;
 using CameraOperationsManagement.ViewModels.Sites;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,11 +12,14 @@ namespace CameraOperationsManagement.Controllers
     public class SitesController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IPdfService _pdfService;
 
         public SitesController(
-            ApplicationDbContext context)
+            ApplicationDbContext context,
+            IPdfService pdfService)
         {
             _context = context;
+            _pdfService = pdfService;
         }
 
 
@@ -225,7 +229,42 @@ namespace CameraOperationsManagement.Controllers
         [HttpGet]
         public async Task<IActionResult> History(string id)
         {
-            var site = await _context.Sites
+            var site = await GetSiteHistoryAsync(id);
+
+            if (site == null)
+            {
+                return NotFound();
+            }
+
+            return View(site);
+        }
+        [HttpGet]
+        public async Task<IActionResult> ExportHistoryPdf(string id)
+        {
+            var site = await GetSiteHistoryAsync(id);
+
+            if (site == null)
+            {
+                return NotFound();
+            }
+
+            var pdfBytes =
+                _pdfService.GenerateSiteHistoryPdf(site);
+
+            var fileName =
+                $"Site-History-{site.SiteId}.pdf";
+
+            Response.Headers.ContentDisposition =
+                $"inline; filename=\"{fileName}\"";
+
+            return File(
+                pdfBytes,
+                "application/pdf");
+        }
+        private async Task<SiteHistoryViewModel?>
+    GetSiteHistoryAsync(string id)
+        {
+            return await _context.Sites
                 .AsNoTracking()
                 .Where(s => s.Id == id)
                 .Select(s => new SiteHistoryViewModel
@@ -328,15 +367,6 @@ namespace CameraOperationsManagement.Controllers
                         .ToList()
                 })
                 .FirstOrDefaultAsync();
-
-
-            if (site == null)
-            {
-                return NotFound();
-            }
-
-
-            return View(site);
         }
     }
 }
