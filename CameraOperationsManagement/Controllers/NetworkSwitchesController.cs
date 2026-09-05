@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CameraOperationsManagement.Controllers
 {
-    [Authorize(Roles = "Admin,Editor,Viewer")]
+    [Authorize(Policy = "CanViewInfrastructure")]
     public class NetworkSwitchesController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -44,7 +44,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // GET: NetworkSwitches/Create
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpGet]
         public async Task<IActionResult> Create()
         {
@@ -55,7 +55,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // POST: NetworkSwitches/Create
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
@@ -121,7 +121,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // GET: NetworkSwitches/Edit/5
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
@@ -149,7 +149,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // POST: NetworkSwitches/Edit/5
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
@@ -212,7 +212,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // POST: NetworkSwitches/ToggleStatus/5
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "CanChangeStatus")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleStatus(int id)
@@ -262,6 +262,80 @@ namespace CameraOperationsManagement.Controllers
                     "Id",
                     "DisplayName",
                     selectedSiteId);
+        }
+        [HttpGet]
+        public async Task<IActionResult> History(int id)
+        {
+            var networkSwitch = await _context.NetworkSwitches
+                .AsNoTracking()
+                .Where(s => s.Id == id)
+                .Select(s => new SwitchHistoryViewModel
+                {
+                    SwitchId = s.Id,
+
+                    SwitchName = s.Name,
+
+                    SiteId = s.SiteId,
+
+                    SiteName = s.Site.Name,
+
+                    IsActive = s.IsActive,
+
+                    Visits = _context.Visits
+                        .Where(v =>
+                            v.NetworkSwitchId == s.Id)
+                        .OrderByDescending(v =>
+                            v.VisitDate)
+                        .Select(v =>
+                            new SwitchHistoryVisitViewModel
+                            {
+                                VisitId = v.Id,
+
+                                VisitDate = v.VisitDate,
+
+                                Purpose = v.Purpose,
+
+                                WorkerNames =
+                                    v.VisitWorkers
+                                        .OrderBy(vw =>
+                                            vw.Worker.FirstName)
+                                        .ThenBy(vw =>
+                                            vw.Worker.SecondName)
+                                        .ThenBy(vw =>
+                                            vw.Worker.LastName)
+                                        .Select(vw =>
+                                            vw.Worker.FirstName + " " +
+                                            vw.Worker.SecondName + " " +
+                                            vw.Worker.LastName)
+                                        .ToList(),
+
+                                MalfunctionType =
+                                    v.MalfunctionType,
+
+                                MalfunctionDescription =
+                                    v.MalfunctionDescription,
+
+                                RepairWorkPerformed =
+                                    v.RepairWorkPerformed,
+
+                                RepairResult =
+                                    v.RepairResult,
+
+                                Notes =
+                                    v.Notes
+                            })
+                        .ToList()
+                })
+                .FirstOrDefaultAsync();
+
+
+            if (networkSwitch == null)
+            {
+                return NotFound();
+            }
+
+
+            return View(networkSwitch);
         }
     }
 }

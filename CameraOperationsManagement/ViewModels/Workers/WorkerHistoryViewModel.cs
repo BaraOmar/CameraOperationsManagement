@@ -1,27 +1,38 @@
-﻿namespace CameraOperationsManagement.ViewModels.Workers
+﻿using CameraOperationsManagement.Models.Enums;
+
+namespace CameraOperationsManagement.ViewModels.Workers
 {
     public class WorkerHistoryViewModel
     {
         public int WorkerId { get; set; }
 
-        public string WorkerName { get; set; }
+        public string FirstName { get; set; }
+            = string.Empty;
+
+        public string SecondName { get; set; }
+            = string.Empty;
+
+        public string LastName { get; set; }
             = string.Empty;
 
         public bool IsActive { get; set; }
 
 
-        public List<WorkerSiteVisitHistoryViewModel> SiteVisits
-        { get; set; } = new();
+        public string FullName =>
+            $"{FirstName} {SecondName} {LastName}";
 
 
-        public List<WorkerCameraVisitHistoryViewModel> CameraVisits
+        public List<WorkerHistoryVisitViewModel> Visits
         { get; set; } = new();
     }
 
 
-    public class WorkerSiteVisitHistoryViewModel
+    public class WorkerHistoryVisitViewModel
     {
         public int VisitId { get; set; }
+
+        public DateTime VisitDate { get; set; }
+
 
         public string SiteId { get; set; }
             = string.Empty;
@@ -29,34 +40,16 @@
         public string SiteName { get; set; }
             = string.Empty;
 
-        public DateTime VisitDate { get; set; }
+
+        public VisitComponentType ComponentType { get; set; }
+
+        public string ComponentName { get; set; }
+            = string.Empty;
+
 
         public string Purpose { get; set; }
             = string.Empty;
 
-        public string? Notes { get; set; }
-    }
-
-
-    public class WorkerCameraVisitHistoryViewModel
-    {
-        public int VisitId { get; set; }
-
-        public int CameraId { get; set; }
-
-        public string CameraName { get; set; }
-            = string.Empty;
-
-        public string SiteName { get; set; }
-            = string.Empty;
-
-        public string RecorderName { get; set; }
-            = string.Empty;
-
-        public DateTime VisitDate { get; set; }
-
-        public string Purpose { get; set; }
-            = string.Empty;
 
         public string? MalfunctionType { get; set; }
 

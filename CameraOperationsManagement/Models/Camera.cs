@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using CameraOperationsManagement.Models.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace CameraOperationsManagement.Models
 {
@@ -30,6 +31,9 @@ namespace CameraOperationsManagement.Models
         [Display(Name = "Camera Type")]
         public string? Type { get; set; }
 
+        [Required]
+        [Display(Name = "Camera Environment")]
+        public CameraEnvironment Environment { get; set; }
 
         [StringLength(45)]
         [Display(Name = "IP Address")]

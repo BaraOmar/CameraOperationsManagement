@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CameraOperationsManagement.Controllers
 {
-    [Authorize(Roles = "Admin,Editor,Viewer")]
+    [Authorize(Policy = "CanViewInfrastructure")]
     public class RecordersController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -58,7 +58,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // GET: Recorders/Create
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpGet]
         public async Task<IActionResult> Create()
         {
@@ -73,7 +73,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // POST: Recorders/Create
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
@@ -103,7 +103,13 @@ namespace CameraOperationsManagement.Controllers
                     nameof(model.SiteId),
                     "Please select a valid active site.");
             }
-
+            if (model.Type == RecorderType.NVR &&
+    !model.NetworkSwitchId.HasValue)
+            {
+                ModelState.AddModelError(
+                    nameof(model.NetworkSwitchId),
+                    "A network switch is required for an NVR.");
+            }
 
             if (model.NetworkSwitchId.HasValue)
             {
@@ -159,7 +165,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // GET: Recorders/Edit/5
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
@@ -196,7 +202,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // POST: Recorders/Edit/5
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
@@ -246,6 +252,13 @@ namespace CameraOperationsManagement.Controllers
                 ModelState.AddModelError(
                     nameof(model.SiteId),
                     "Please select a valid site.");
+            }
+            if (model.Type == RecorderType.NVR &&
+!model.NetworkSwitchId.HasValue)
+            {
+                ModelState.AddModelError(
+                    nameof(model.NetworkSwitchId),
+                    "A network switch is required for an NVR.");
             }
 
 
@@ -314,7 +327,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // POST: Recorders/ToggleStatus/5
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "CanChangeStatus")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleStatus(
@@ -345,7 +358,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // Used by the Recorder form when Site changes
-        [Authorize(Roles = "Admin,Editor")]
+        //[Authorize(Roles = "Admin,Editor")]
         [HttpGet]
         public async Task<IActionResult> GetSwitchesBySite(
             string siteId)
@@ -430,6 +443,87 @@ namespace CameraOperationsManagement.Controllers
                     "Id",
                     "Name",
                     selectedSwitchId);
+        }
+        [HttpGet]
+        public async Task<IActionResult> History(int id)
+        {
+            var recorder = await _context.Recorders
+                .AsNoTracking()
+                .Where(r => r.Id == id)
+                .Select(r => new RecorderHistoryViewModel
+                {
+                    RecorderId = r.Id,
+
+                    RecorderName = r.Name,
+
+                    RecorderType = r.Type.ToString(),
+
+                    SiteId = r.SiteId,
+
+                    SiteName = r.Site.Name,
+
+                    NetworkSwitchName =
+                        r.NetworkSwitch != null
+                            ? r.NetworkSwitch.Name
+                            : null,
+
+                    IsActive = r.IsActive,
+
+                    Visits = _context.Visits
+                        .Where(v =>
+                            v.RecorderId == r.Id)
+                        .OrderByDescending(v =>
+                            v.VisitDate)
+                        .Select(v =>
+                            new RecorderHistoryVisitViewModel
+                            {
+                                VisitId = v.Id,
+
+                                VisitDate = v.VisitDate,
+
+                                Purpose = v.Purpose,
+
+                                WorkerNames =
+                                    v.VisitWorkers
+                                        .OrderBy(vw =>
+                                            vw.Worker.FirstName)
+                                        .ThenBy(vw =>
+                                            vw.Worker.SecondName)
+                                        .ThenBy(vw =>
+                                            vw.Worker.LastName)
+                                        .Select(vw =>
+                                            vw.Worker.FirstName + " " +
+                                            vw.Worker.SecondName + " " +
+                                            vw.Worker.LastName)
+                                        .ToList(),
+
+                                MalfunctionType =
+                                    v.MalfunctionType,
+
+                                MalfunctionDescription =
+                                    v.MalfunctionDescription,
+
+                                RepairWorkPerformed =
+                                    v.RepairWorkPerformed,
+
+                                RepairResult =
+                                    v.RepairResult,
+
+                                Notes =
+                                    v.Notes
+                            })
+                        .ToList()
+                })
+                .FirstOrDefaultAsync();
+
+
+            if (recorder == null)
+            {
+                return NotFound();
+            }
+
+
+            return View(recorder);
         }
     }
 }

@@ -1,0 +1,47 @@
+﻿@model CameraOperationsManagement.ViewModels.Visits.VisitFormViewModel
+
+@{
+    ViewData["Title"] = "Record Visit";
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Record Visit
+        </h2>
+
+        <p class="page-description">
+            Record an operational visit for a site component.
+        </p>
+    </div>
+
+</div>
+
+
+<form asp-action="Create"
+      method="post">
+
+    <partial name="_VisitForm"
+             model="Model" />
+
+
+    <div class="d-flex gap-2 mt-4">
+
+        <button type="submit"
+                class="btn btn-primary">
+            Record Visit
+        </button>
+
+        <a asp-action="Index"
+               class="btn btn-outline-secondary">
+            Cancel
+        </a>
+
+    </div>
+
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

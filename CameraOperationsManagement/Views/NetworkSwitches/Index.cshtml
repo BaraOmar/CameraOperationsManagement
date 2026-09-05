@@ -1,7 +1,16 @@
-﻿@model IEnumerable<CameraOperationsManagement.ViewModels.NetworkSwitches.NetworkSwitchListItemViewModel>
+﻿@using CameraOperationsManagement.Models
+
+@model IEnumerable<CameraOperationsManagement.ViewModels.NetworkSwitches.NetworkSwitchListItemViewModel>
 
 @{
     ViewData["Title"] = "Network Switches";
+
+    var canManageInfrastructure =
+        User.IsInRole(AppRoles.Admin) ||
+        User.IsInRole(AppRoles.InfrastructureManager);
+
+    var isAdmin =
+        User.IsInRole(AppRoles.Admin);
 }
 
 <div class="page-header">
@@ -16,8 +25,7 @@
         </p>
     </div>
 
-    @if (User.IsInRole("Admin") ||
-         User.IsInRole("Editor"))
+    @if (canManageInfrastructure)
     {
         <a asp-action="Create"
                class="btn btn-primary">
@@ -56,13 +64,9 @@
                         <th>Site</th>
                         <th>Status</th>
 
-                        @if (User.IsInRole("Admin") ||
-                             User.IsInRole("Editor"))
-                        {
-                            <th class="text-end">
-                                Actions
-                            </th>
-                        }
+                        <th class="text-end">
+                            Actions
+                        </th>
                     </tr>
                 </thead>
 
@@ -78,6 +82,7 @@
                                 </strong>
                             </td>
 
+
                             <td>
                                 <div>
                                     @item.SiteName
@@ -87,6 +92,7 @@
                                     @item.SiteId
                                 </small>
                             </td>
+
 
                             <td>
                                 @if (item.IsActive)
@@ -104,47 +110,57 @@
                             </td>
 
 
-                            @if (User.IsInRole("Admin") ||
-                                 User.IsInRole("Editor"))
-                            {
-                                <td class="text-end">
+                            <td class="text-end">
 
-                                    <div class="d-inline-flex gap-2">
+                                <div class="d-inline-flex gap-2">
 
+                                    <!-- Read-only access -->
+                                    <a asp-action="History"
+                                           asp-route-id="@item.Id"
+                                           class="btn btn-sm btn-outline-secondary">
+                                        History
+                                    </a>
+
+
+                                    <!-- Admin + Infrastructure Manager -->
+                                    @if (canManageInfrastructure)
+                                    {
                                         <a asp-action="Edit"
                                                asp-route-id="@item.Id"
                                                class="btn btn-sm btn-outline-secondary">
                                             Edit
                                         </a>
+                                    }
 
-                                        @if (User.IsInRole("Admin"))
-                                        {
-                                            <form asp-action="ToggleStatus"
-                                                  asp-route-id="@item.Id"
-                                                  method="post">
 
-                                                @if (item.IsActive)
-                                                {
-                                                    <button type="submit"
-                                                            class="btn btn-sm btn-outline-secondary">
-                                                        Deactivate
-                                                    </button>
-                                                }
-                                                else
-                                                {
-                                                    <button type="submit"
-                                                            class="btn btn-sm btn-outline-secondary">
-                                                        Activate
-                                                    </button>
-                                                }
+                                    <!-- Admin only -->
+                                    @if (isAdmin)
+                                    {
+                                        <form asp-action="ToggleStatus"
+                                              asp-route-id="@item.Id"
+                                              method="post">
 
-                                            </form>
-                                        }
+                                            @if (item.IsActive)
+                                            {
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-secondary">
+                                                    Deactivate
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-secondary">
+                                                    Activate
+                                                </button>
+                                            }
 
-                                    </div>
+                                        </form>
+                                    }
 
-                                </td>
-                            }
+                                </div>
+
+                            </td>
 
                         </tr>
                     }

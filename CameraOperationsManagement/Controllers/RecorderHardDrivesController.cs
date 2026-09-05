@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CameraOperationsManagement.Controllers
 {
-    [Authorize(Roles = "Admin,Editor,Viewer")]
+    [Authorize(Policy = "CanViewInfrastructure")]
     public class RecorderHardDrivesController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -71,7 +71,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // GET: RecorderHardDrives/Create?recorderId=5
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpGet]
         public async Task<IActionResult> Create(
             int recorderId)
@@ -93,7 +93,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // POST: RecorderHardDrives/Create
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
@@ -159,7 +159,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // GET: RecorderHardDrives/Edit/5
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
@@ -191,7 +191,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // POST: RecorderHardDrives/Edit/5
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
@@ -269,7 +269,7 @@ string.IsNullOrWhiteSpace(model.SerialNumber)
 
 
         // POST: RecorderHardDrives/Delete/5
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanChangeStatus")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)

@@ -1,0 +1,302 @@
+﻿@model CameraOperationsManagement.ViewModels.Visits.VisitDetailsViewModel
+
+@{
+    ViewData["Title"] = "Visit Details";
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Visit Details
+        </h2>
+
+        <p class="page-description">
+            Complete operational record for this visit.
+        </p>
+    </div>
+
+
+    <div class="d-flex gap-2">
+
+        <a asp-action="Edit"
+               asp-route-id="@Model.Id"
+               class="btn btn-primary">
+            Edit Visit
+        </a>
+
+        <a asp-action="Index"
+               class="btn btn-outline-secondary">
+            Back to Visits
+        </a>
+
+    </div>
+
+</div>
+
+
+<!-- TARGET -->
+<div class="app-card mb-4">
+
+    <div class="app-card-header">
+        <strong>Visit Target</strong>
+    </div>
+
+    <div class="app-card-body">
+
+        <div class="row g-4">
+
+            <div class="col-md-4">
+                <div class="text-muted small mb-1">
+                    Site
+                </div>
+
+                <strong>
+                    @Model.SiteName
+                </strong>
+
+                <div class="text-muted small">
+                    @Model.SiteId
+                </div>
+            </div>
+
+
+            <div class="col-md-4">
+                <div class="text-muted small mb-1">
+                    Component Type
+                </div>
+
+                <div>
+                    @Model.ComponentType
+                </div>
+            </div>
+
+
+            <div class="col-md-4">
+                <div class="text-muted small mb-1">
+                    Component
+                </div>
+
+                <strong>
+                    @Model.ComponentName
+                </strong>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- VISIT INFORMATION -->
+<div class="app-card mb-4">
+
+    <div class="app-card-header">
+        <strong>Visit Information</strong>
+    </div>
+
+    <div class="app-card-body">
+
+        <div class="row g-4">
+
+            <div class="col-md-4">
+
+                <div class="text-muted small mb-1">
+                    Visit Date
+                </div>
+
+                <div>
+                    @Model.VisitDate.ToString(
+                        "dd/MM/yyyy HH:mm")
+                </div>
+
+            </div>
+
+
+            <div class="col-md-8">
+
+                <div class="text-muted small mb-1">
+                    Purpose
+                </div>
+
+                <div>
+                    @Model.Purpose
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- WORKERS -->
+<div class="app-card mb-4">
+
+    <div class="app-card-header">
+        <strong>Workers</strong>
+    </div>
+
+    <div class="app-card-body">
+
+        @if (Model.WorkerNames.Any())
+        {
+            <div class="d-flex flex-wrap gap-2">
+
+                @foreach (var worker in Model.WorkerNames)
+                {
+                    <span class="badge text-bg-secondary">
+                        @worker
+                    </span>
+                }
+
+            </div>
+        }
+        else
+        {
+            <span class="text-muted">
+                No workers recorded.
+            </span>
+        }
+
+    </div>
+
+</div>
+
+
+<!-- MALFUNCTION -->
+<div class="app-card mb-4">
+
+    <div class="app-card-header">
+        <strong>Malfunction</strong>
+    </div>
+
+    <div class="app-card-body">
+
+        @if (string.IsNullOrWhiteSpace(
+            Model.MalfunctionType) &&
+            string.IsNullOrWhiteSpace(
+            Model.MalfunctionDescription))
+        {
+            <span class="text-muted">
+                No malfunction recorded.
+            </span>
+        }
+        else
+        {
+            <div class="row g-4">
+
+                <div class="col-md-4">
+
+                    <div class="text-muted small mb-1">
+                        Type
+                    </div>
+
+                    <div>
+                        @(Model.MalfunctionType ?? "—")
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-8">
+
+                    <div class="text-muted small mb-1">
+                        Description
+                    </div>
+
+                    <div>
+                        @(Model.MalfunctionDescription ?? "—")
+                    </div>
+
+                </div>
+
+            </div>
+        }
+
+    </div>
+
+</div>
+
+
+<!-- REPAIR -->
+<div class="app-card mb-4">
+
+    <div class="app-card-header">
+        <strong>Repair</strong>
+    </div>
+
+    <div class="app-card-body">
+
+        @if (string.IsNullOrWhiteSpace(
+            Model.RepairWorkPerformed) &&
+            string.IsNullOrWhiteSpace(
+            Model.RepairResult))
+        {
+            <span class="text-muted">
+                No repair recorded.
+            </span>
+        }
+        else
+        {
+            <div class="row g-4">
+
+                <div class="col-md-8">
+
+                    <div class="text-muted small mb-1">
+                        Work Performed
+                    </div>
+
+                    <div>
+                        @(Model.RepairWorkPerformed ?? "—")
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-4">
+
+                    <div class="text-muted small mb-1">
+                        Result
+                    </div>
+
+                    <div>
+                        @(Model.RepairResult ?? "—")
+                    </div>
+
+                </div>
+
+            </div>
+        }
+
+    </div>
+
+</div>
+
+
+<!-- NOTES -->
+<div class="app-card">
+
+    <div class="app-card-header">
+        <strong>Notes</strong>
+    </div>
+
+    <div class="app-card-body">
+
+        @if (string.IsNullOrWhiteSpace(Model.Notes))
+        {
+            <span class="text-muted">
+                No additional notes.
+            </span>
+        }
+        else
+        {
+            @Model.Notes
+        }
+
+    </div>
+
+</div>

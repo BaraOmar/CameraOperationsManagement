@@ -4,140 +4,194 @@
     ViewData["Title"] = "Create User";
 }
 
-<div class="container py-4">
+<div class="page-header">
 
-    <div class="mb-4">
-        <h2 class="mb-1">Create User</h2>
-        <p class="text-muted mb-0">
-            Create a system account and assign its role.
+    <div>
+        <h2 class="page-heading">
+            Create User
+        </h2>
+
+        <p class="page-description">
+            Create a new system user and assign their access role.
         </p>
     </div>
 
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-4">
+    <a asp-action="Index"
+           class="btn btn-outline-secondary">
+        Back to Users
+    </a>
 
-            <form asp-action="Create" method="post">
+</div>
 
-                <div asp-validation-summary="ModelOnly"
-                     class="text-danger mb-3">
+
+<div class="app-card">
+
+    <div class="app-card-header">
+        <strong>User Information</strong>
+    </div>
+
+    <div class="app-card-body">
+
+        <form asp-action="Create"
+              method="post">
+
+            <div asp-validation-summary="ModelOnly"
+                 class="text-danger mb-3">
+            </div>
+
+
+            <div class="row g-4">
+
+                <div class="col-md-4">
+
+                    <label asp-for="FirstName"
+                           class="form-label">
+                    </label>
+
+                    <input asp-for="FirstName"
+                           class="form-control" />
+
+                    <span asp-validation-for="FirstName"
+                          class="text-danger">
+                    </span>
+
                 </div>
 
-                <div class="row g-3">
 
-                    <div class="col-md-4">
-                        <label asp-for="FirstName"
-                               class="form-label">
-                        </label>
+                <div class="col-md-4">
 
-                        <input asp-for="FirstName"
-                               class="form-control" />
+                    <label asp-for="SecondName"
+                           class="form-label">
+                    </label>
 
-                        <span asp-validation-for="FirstName"
-                              class="text-danger">
-                        </span>
-                    </div>
+                    <input asp-for="SecondName"
+                           class="form-control" />
 
-                    <div class="col-md-4">
-                        <label asp-for="SecondName"
-                               class="form-label">
-                        </label>
+                    <span asp-validation-for="SecondName"
+                          class="text-danger">
+                    </span>
 
-                        <input asp-for="SecondName"
-                               class="form-control" />
+                </div>
 
-                        <span asp-validation-for="SecondName"
-                              class="text-danger">
-                        </span>
-                    </div>
 
-                    <div class="col-md-4">
-                        <label asp-for="LastName"
-                               class="form-label">
-                        </label>
+                <div class="col-md-4">
 
-                        <input asp-for="LastName"
-                               class="form-control" />
+                    <label asp-for="LastName"
+                           class="form-label">
+                    </label>
 
-                        <span asp-validation-for="LastName"
-                              class="text-danger">
-                        </span>
-                    </div>
+                    <input asp-for="LastName"
+                           class="form-control" />
+
+                    <span asp-validation-for="LastName"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                    <label asp-for="Email"
+                           class="form-label">
+                    </label>
+
+                    <input asp-for="Email"
+                           class="form-control"
+                           autocomplete="off" />
+
+                    <span asp-validation-for="Email"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+
+                <div class="col-md-6">
+
+                    <label asp-for="Password"
+                           class="form-label">
+                    </label>
+
+                    <input asp-for="Password"
+                           class="form-control"
+                           autocomplete="new-password" />
+
+                    <span asp-validation-for="Password"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="mt-4">
+
+                <div class="mb-2">
+                    <h3 class="h6 mb-1">
+                        Access Role
+                    </h3>
+
+                    <p class="text-muted small mb-0">
+                        The selected role determines which pages,
+                        actions and reports this user can access.
+                    </p>
+                </div>
+
+
+                <div class="row">
 
                     <div class="col-md-6">
-                        <label asp-for="Email"
-                               class="form-label">
-                        </label>
 
-                        <input asp-for="Email"
-                               class="form-control" />
-
-                        <span asp-validation-for="Email"
-                              class="text-danger">
-                        </span>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label asp-for="Password"
-                               class="form-label">
-                        </label>
-
-                        <input asp-for="Password"
-                               class="form-control" />
-
-                        <span asp-validation-for="Password"
-                              class="text-danger">
-                        </span>
-                    </div>
-
-                    <div class="col-md-6">
                         <label asp-for="Role"
                                class="form-label">
+                            Role
                         </label>
 
                         <select asp-for="Role"
+                                asp-items="ViewBag.Roles"
                                 class="form-select">
 
                             <option value="">
-                                Select role
+                                Select a role
                             </option>
-
-                            @foreach (var role in ViewBag.Roles)
-                            {
-                                <option value="@role">
-                                    @role
-                                </option>
-                            }
 
                         </select>
 
                         <span asp-validation-for="Role"
                               class="text-danger">
                         </span>
+
                     </div>
 
                 </div>
 
-                <div class="d-flex gap-2 mt-4">
+            </div>
 
-                    <button type="submit"
-                            class="btn btn-primary">
-                        Create User
-                    </button>
 
-                    <a asp-action="Index"
-                           class="btn btn-outline-secondary">
-                        Cancel
-                    </a>
+            <div class="d-flex gap-2 mt-4">
 
-                </div>
+                <button type="submit"
+                        class="btn btn-primary">
+                    Create User
+                </button>
 
-            </form>
+                <a asp-action="Index"
+                       class="btn btn-outline-secondary">
+                    Cancel
+                </a>
 
-        </div>
+            </div>
+
+        </form>
+
     </div>
 
 </div>
 
-@section Scripts {
+
+@section Scripts
+{
     <partial name="_ValidationScriptsPartial" />
 }

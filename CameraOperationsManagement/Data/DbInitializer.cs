@@ -17,12 +17,7 @@ namespace CameraOperationsManagement.Data
                 serviceProvider.GetRequiredService<
                     UserManager<ApplicationUser>>();
 
-            string[] roles =
-            {
-                "Admin",
-                "Editor",
-                "Viewer"
-            };
+            var roles = AppRoles.All;
 
             foreach (var role in roles)
             {
@@ -86,11 +81,11 @@ namespace CameraOperationsManagement.Data
 
             if (!await userManager.IsInRoleAsync(
                     admin,
-                    "Admin"))
+                    AppRoles.Admin))
             {
                 await userManager.AddToRoleAsync(
                     admin,
-                    "Admin");
+                    AppRoles.Admin);
             }
         }
     }

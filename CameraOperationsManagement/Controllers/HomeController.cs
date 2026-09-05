@@ -1,10 +1,11 @@
-using System.Diagnostics;
 using CameraOperationsManagement.Data;
 using CameraOperationsManagement.Models;
+using CameraOperationsManagement.Models.Enums;
 using CameraOperationsManagement.ViewModels.Dashboard;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 namespace CameraOperationsManagement.Controllers
 {
@@ -23,6 +24,13 @@ namespace CameraOperationsManagement.Controllers
 
         public async Task<IActionResult> Index()
         {
+            if (User.IsInRole(AppRoles.Viewer))
+            {
+                return RedirectToAction(
+                    "Index",
+                    "Sites");
+            }
+
             var viewModel = new DashboardViewModel
             {
                 ActiveSites =
@@ -40,33 +48,47 @@ namespace CameraOperationsManagement.Controllers
                         .AsNoTracking()
                         .CountAsync(w => w.IsActive),
 
-                TotalCameraVisits =
-                    await _context.CameraVisits
+                TotalVisits =
+                    await _context.Visits
                         .AsNoTracking()
                         .CountAsync(),
 
 
-                RecentCameraVisits =
-                    await _context.CameraVisits
+                RecentVisits =
+                    await _context.Visits
                         .AsNoTracking()
-                        .OrderByDescending(v => v.VisitDate)
-                        .Take(5)
+                        .OrderByDescending(v =>
+                            v.VisitDate)
+                        .Take(8)
                         .Select(v =>
-                            new RecentCameraVisitViewModel
+                            new RecentVisitViewModel
                             {
-                                VisitId = v.Id,
-
-                                CameraName =
-                                    v.Camera.Name,
-
-                                SiteName =
-                                    v.Camera
-                                        .Recorder
-                                        .Site
-                                        .Name,
+                                VisitId =
+                                    v.Id,
 
                                 VisitDate =
                                     v.VisitDate,
+
+                                SiteId =
+                                    v.SiteId,
+
+                                SiteName =
+                                    v.Site.Name,
+
+                                ComponentType =
+                                    v.ComponentType
+                                        .ToString(),
+
+                                ComponentName =
+                                    v.ComponentType ==
+                                    VisitComponentType.Recorder
+                                        ? v.Recorder!.Name
+
+                                        : v.ComponentType ==
+                                          VisitComponentType.Switch
+                                            ? v.NetworkSwitch!.Name
+
+                                            : v.Camera!.Name,
 
                                 Purpose =
                                     v.Purpose,
@@ -76,32 +98,6 @@ namespace CameraOperationsManagement.Controllers
 
                                 RepairResult =
                                     v.RepairResult
-                            })
-                        .ToListAsync(),
-
-
-                RecentSiteVisits =
-                    await _context.SiteVisits
-                        .AsNoTracking()
-                        .OrderByDescending(v => v.VisitDate)
-                        .Take(5)
-                        .Select(v =>
-                            new RecentSiteVisitViewModel
-                            {
-                                VisitId =
-                                    v.Id,
-
-                                SiteId =
-                                    v.SiteId,
-
-                                SiteName =
-                                    v.Site.Name,
-
-                                VisitDate =
-                                    v.VisitDate,
-
-                                Purpose =
-                                    v.Purpose
                             })
                         .ToListAsync()
             };

@@ -37,7 +37,27 @@
         </span>
 
     </div>
+    <div class="col-md-6">
 
+        <label asp-for="Environment"
+               class="form-label">
+        </label>
+
+        <select asp-for="Environment"
+                asp-items="Html.GetEnumSelectList<CameraOperationsManagement.Models.Enums.CameraEnvironment>()"
+                class="form-select">
+
+            <option value="">
+                Select environment
+            </option>
+
+        </select>
+
+        <span asp-validation-for="Environment"
+              class="text-danger">
+        </span>
+
+    </div>
 
     <div class="col-md-6">
 

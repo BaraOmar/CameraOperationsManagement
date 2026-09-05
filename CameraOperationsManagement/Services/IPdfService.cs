@@ -14,5 +14,8 @@ namespace CameraOperationsManagement.Services
         byte[] GenerateCameraListPdf(
     IEnumerable<CameraListItemViewModel> cameras);
 
+        byte[] GenerateSiteStructurePdf(
+    SiteStructureViewModel model);
+
     }
 }

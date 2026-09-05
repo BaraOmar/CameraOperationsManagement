@@ -1,0 +1,354 @@
+﻿@model CameraOperationsManagement.ViewModels.Sites.SiteStructureViewModel
+
+@{
+    ViewData["Title"] = "Site Structure";
+
+    var recorderCount = Model.Recorders.Count;
+
+    var nvrCount = Model.Recorders.Count(
+        r => r.Type.Equals(
+            "NVR",
+            StringComparison.OrdinalIgnoreCase));
+
+    var dvrCount = Model.Recorders.Count(
+        r => r.Type.Equals(
+            "DVR",
+            StringComparison.OrdinalIgnoreCase));
+
+    var cameraCount = Model.Recorders
+        .Sum(r => r.Cameras.Count);
+
+    var switchCount = Model.Switches.Count;
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Site Structure
+        </h2>
+
+        <p class="page-description">
+            Infrastructure structure for @Model.SiteName.
+        </p>
+    </div>
+
+
+    <div class="d-flex gap-2">
+
+        <a asp-action="ExportStructurePdf"
+               asp-route-id="@Model.SiteId"
+               target="_blank"
+               class="btn btn-primary">
+            View PDF
+        </a>
+
+        <a asp-action="Index"
+               class="btn btn-outline-secondary">
+            Back to Sites
+        </a>
+
+    </div>
+
+</div>
+
+
+<!-- SITE -->
+<div class="structure-site-card">
+
+    <div class="structure-label">
+        SITE
+    </div>
+
+    <h3>
+        @Model.SiteName
+    </h3>
+
+    <div class="text-muted">
+        @Model.SiteId
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Location))
+    {
+        <div class="text-muted small mt-1">
+            @Model.Location
+        </div>
+    }
+
+</div>
+<div class="structure-summary">
+
+    <!-- RECORDERS -->
+    <div class="structure-summary-item">
+
+        <div class="structure-summary-label">
+            RECORDERS
+        </div>
+
+        <div class="structure-summary-value">
+            @recorderCount
+        </div>
+
+        <div class="structure-summary-detail">
+            @nvrCount NVR · @dvrCount DVR
+        </div>
+
+    </div>
+
+
+    <!-- CAMERAS -->
+    <div class="structure-summary-item">
+
+        <div class="structure-summary-label">
+            CAMERAS
+        </div>
+
+        <div class="structure-summary-value">
+            @cameraCount
+        </div>
+
+        <div class="structure-summary-detail">
+            Connected cameras
+        </div>
+
+    </div>
+
+
+    <!-- SWITCHES -->
+    <div class="structure-summary-item">
+
+        <div class="structure-summary-label">
+            SWITCHES
+        </div>
+
+        <div class="structure-summary-value">
+            @switchCount
+        </div>
+
+        <div class="structure-summary-detail">
+            Network switches
+        </div>
+
+    </div>
+
+</div>
+
+<div class="structure-main-line"></div>
+
+
+<div class="row g-4">
+
+    <!-- RECORDERS -->
+    <div class="col-lg-8">
+
+        <div class="structure-section-title">
+            Recorders
+        </div>
+
+
+        @if (!Model.Recorders.Any())
+        {
+            <div class="app-card">
+
+                <div class="app-card-body text-muted text-center py-4">
+                    No recorders are configured for this site.
+                </div>
+
+            </div>
+        }
+        else
+        {
+            <div class="d-flex flex-column gap-4">
+
+                @foreach (var recorder in Model.Recorders)
+                {
+                    <div class="structure-recorder">
+
+                        <div class="structure-recorder-header">
+
+                            <div>
+
+                                <div class="structure-label">
+                                    @recorder.Type
+                                </div>
+
+                                <strong>
+                                    @recorder.Name
+                                </strong>
+
+                            </div>
+
+
+                            @if (recorder.IsActive)
+                            {
+                                <span class="badge bg-success-subtle text-success">
+                                    Active
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary-subtle text-secondary">
+                                    Inactive
+                                </span>
+                            }
+
+                        </div>
+
+
+                        @if (!string.IsNullOrWhiteSpace(
+                            recorder.NetworkSwitchName))
+                        {
+                            <div class="small text-muted mt-2">
+                                Connected switch:
+                                @recorder.NetworkSwitchName
+                            </div>
+                        }
+
+
+                        <div class="structure-down-line"></div>
+
+
+                        <div class="structure-camera-area">
+
+                            @if (!recorder.Cameras.Any())
+                            {
+                                <div class="text-muted small">
+                                    No cameras connected.
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="row g-3">
+
+                                    @foreach (var camera in recorder.Cameras)
+                                    {
+                                        <div class="col-md-6">
+
+                                            <div class="structure-camera">
+
+                                                <div class="d-flex
+                                                    justify-content-between
+                                                    gap-2">
+
+                                                    <strong>
+                                                        @camera.Name
+                                                    </strong>
+
+                                                    @if (camera.IsActive)
+                                                    {
+                                                        <span class="badge bg-success-subtle text-success">
+                                                            Active
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-secondary-subtle text-secondary">
+                                                            Inactive
+                                                        </span>
+                                                    }
+
+                                                </div>
+
+
+                                                @if (!string.IsNullOrWhiteSpace(
+                                                    camera.Type))
+                                                {
+                                                    <div class="small text-muted mt-2">
+                                                        @camera.Type
+                                                    </div>
+                                                }
+
+
+                                                @if (!string.IsNullOrWhiteSpace(
+                                                    camera.IpAddress))
+                                                {
+                                                    <div class="small text-muted mt-1">
+                                                        IP: @camera.IpAddress
+                                                    </div>
+                                                }
+
+
+                                                <div class="small text-muted mt-1">
+                                                    @camera.InstallationLocation
+                                                </div>
+
+                                            </div>
+
+                                        </div>
+                                    }
+
+                                </div>
+                            }
+
+                        </div>
+
+                    </div>
+                }
+
+            </div>
+        }
+
+    </div>
+
+
+    <!-- SWITCHES -->
+    <div class="col-lg-4">
+
+        <div class="structure-section-title">
+            Switches
+        </div>
+
+
+        @if (!Model.Switches.Any())
+        {
+            <div class="app-card">
+
+                <div class="app-card-body text-muted text-center py-4">
+                    No switches are configured for this site.
+                </div>
+
+            </div>
+        }
+        else
+        {
+            <div class="d-flex flex-column gap-3">
+
+                @foreach (var networkSwitch in Model.Switches)
+                {
+                    <div class="structure-switch">
+
+                        <div>
+
+                            <div class="structure-label">
+                                SWITCH
+                            </div>
+
+                            <strong>
+                                @networkSwitch.Name
+                            </strong>
+
+                        </div>
+
+
+                        @if (networkSwitch.IsActive)
+                        {
+                            <span class="badge bg-success-subtle text-success">
+                                Active
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary-subtle text-secondary">
+                                Inactive
+                            </span>
+                        }
+
+                    </div>
+                }
+
+            </div>
+        }
+
+    </div>
+
+</div>

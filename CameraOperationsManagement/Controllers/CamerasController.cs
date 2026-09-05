@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CameraOperationsManagement.Controllers
 {
-    [Authorize(Roles = "Admin,Editor,Viewer")]
+    [Authorize(Policy = "CanViewInfrastructure")]
     public class CamerasController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -61,6 +61,8 @@ namespace CameraOperationsManagement.Controllers
 
                         Type = c.Type,
 
+                        Environment = c.Environment,
+
                         IpAddress = c.IpAddress,
 
                         InstallationLocation =
@@ -105,7 +107,7 @@ namespace CameraOperationsManagement.Controllers
         // CREATE GET
         // =====================================================
 
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpGet]
         public async Task<IActionResult> Create()
         {
@@ -121,7 +123,7 @@ namespace CameraOperationsManagement.Controllers
         // CREATE POST
         // =====================================================
 
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
@@ -170,18 +172,14 @@ namespace CameraOperationsManagement.Controllers
             var camera = new Camera
             {
                 Name = viewModel.Name.Trim(),
-
                 Brand = Normalize(viewModel.Brand),
-
                 Model = Normalize(viewModel.Model),
-
-                SerialNumber =
-                    Normalize(viewModel.SerialNumber),
-
+                SerialNumber = Normalize(viewModel.SerialNumber),
                 Type = Normalize(viewModel.Type),
 
-                IpAddress =
-                    Normalize(viewModel.IpAddress),
+                Environment = viewModel.Environment!.Value,
+
+                IpAddress = Normalize(viewModel.IpAddress),
 
                 InstallationLocation =
                     viewModel.InstallationLocation.Trim(),
@@ -217,7 +215,7 @@ namespace CameraOperationsManagement.Controllers
         // EDIT GET
         // =====================================================
 
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
@@ -240,6 +238,8 @@ namespace CameraOperationsManagement.Controllers
                 Model = camera.Model,
                 SerialNumber = camera.SerialNumber,
                 Type = camera.Type,
+                Environment = camera.Environment,
+
                 IpAddress = camera.IpAddress,
 
                 InstallationLocation =
@@ -275,7 +275,7 @@ namespace CameraOperationsManagement.Controllers
         // EDIT POST
         // =====================================================
 
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
@@ -375,7 +375,8 @@ namespace CameraOperationsManagement.Controllers
 
             camera.Type =
                 Normalize(viewModel.Type);
-
+            camera.Environment =
+    viewModel.Environment!.Value;
             camera.IpAddress =
                 Normalize(viewModel.IpAddress);
 
@@ -408,7 +409,7 @@ namespace CameraOperationsManagement.Controllers
         // ACTIVATE / DEACTIVATE
         // =====================================================
 
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "CanChangeStatus")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleStatus(
@@ -442,7 +443,7 @@ namespace CameraOperationsManagement.Controllers
         // AJAX: SWITCH FOR RECORDER
         // =====================================================
 
-        [Authorize(Roles = "Admin,Editor")]
+        //[Authorize(Roles = "Admin,Editor")]
         [HttpGet]
         public async Task<IActionResult>
             GetSwitchesByRecorder(int recorderId)
@@ -643,53 +644,53 @@ namespace CameraOperationsManagement.Controllers
                     IsActive =
                         c.IsActive,
 
-                    Visits = _context.CameraVisits
-                        .Where(v =>
-                            v.CameraId == c.Id)
-                        .OrderByDescending(v =>
-                            v.VisitDate)
-                        .Select(v =>
-                            new CameraHistoryVisitViewModel
-                            {
-                                VisitId =
-                                    v.Id,
+                    Visits = _context.Visits
+    .Where(v =>
+        v.CameraId == c.Id)
+    .OrderByDescending(v =>
+        v.VisitDate)
+    .Select(v =>
+        new CameraHistoryVisitViewModel
+        {
+            VisitId =
+                v.Id,
 
-                                VisitDate =
-                                    v.VisitDate,
+            VisitDate =
+                v.VisitDate,
 
-                                Purpose =
-                                    v.Purpose,
+            Purpose =
+                v.Purpose,
 
-                                WorkerNames =
-                                    v.CameraVisitWorkers
-                                        .OrderBy(vw =>
-                                            vw.Worker.FirstName)
-                                        .ThenBy(vw =>
-                                            vw.Worker.SecondName)
-                                        .ThenBy(vw =>
-                                            vw.Worker.LastName)
-                                        .Select(vw =>
-                                            vw.Worker.FirstName + " " +
-                                            vw.Worker.SecondName + " " +
-                                            vw.Worker.LastName)
-                                        .ToList(),
+            WorkerNames =
+                v.VisitWorkers
+                    .OrderBy(vw =>
+                        vw.Worker.FirstName)
+                    .ThenBy(vw =>
+                        vw.Worker.SecondName)
+                    .ThenBy(vw =>
+                        vw.Worker.LastName)
+                    .Select(vw =>
+                        vw.Worker.FirstName + " " +
+                        vw.Worker.SecondName + " " +
+                        vw.Worker.LastName)
+                    .ToList(),
 
-                                MalfunctionType =
-                                    v.MalfunctionType,
+            MalfunctionType =
+                v.MalfunctionType,
 
-                                MalfunctionDescription =
-                                    v.MalfunctionDescription,
+            MalfunctionDescription =
+                v.MalfunctionDescription,
 
-                                RepairWorkPerformed =
-                                    v.RepairWorkPerformed,
+            RepairWorkPerformed =
+                v.RepairWorkPerformed,
 
-                                RepairResult =
-                                    v.RepairResult,
+            RepairResult =
+                v.RepairResult,
 
-                                Notes =
-                                    v.Notes
-                            })
-                        .ToList()
+            Notes =
+                v.Notes
+        })
+    .ToList()
                 })
                 .FirstOrDefaultAsync();
         }
@@ -880,6 +881,7 @@ namespace CameraOperationsManagement.Controllers
                     Model = c.Model,
 
                     Type = c.Type,
+                    Environment = c.Environment,
 
                     IpAddress = c.IpAddress,
 

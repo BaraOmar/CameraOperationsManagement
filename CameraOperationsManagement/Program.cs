@@ -20,6 +20,95 @@ builder.Services
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(
+        "CanManageUsers",
+        policy =>
+            policy.RequireRole(
+                AppRoles.Admin));
+
+
+    options.AddPolicy(
+        "CanManageInfrastructure",
+        policy =>
+            policy.RequireRole(
+                AppRoles.Admin,
+                AppRoles.InfrastructureManager));
+
+
+    options.AddPolicy(
+        "CanViewInfrastructure",
+        policy =>
+            policy.RequireRole(
+                AppRoles.Admin,
+                AppRoles.InfrastructureManager,
+                AppRoles.Editor,
+                AppRoles.InfrastructureViewer));
+
+
+    options.AddPolicy(
+        "CanViewSites",
+        policy =>
+            policy.RequireRole(
+                AppRoles.Admin,
+                AppRoles.InfrastructureManager,
+                AppRoles.Editor,
+                AppRoles.InfrastructureViewer,
+                AppRoles.Viewer));
+
+
+    options.AddPolicy(
+        "CanManageWorkers",
+        policy =>
+            policy.RequireRole(
+                AppRoles.Admin,
+                AppRoles.InfrastructureManager));
+
+
+    options.AddPolicy(
+        "CanViewWorkers",
+        policy =>
+            policy.RequireRole(
+                AppRoles.Admin,
+                AppRoles.InfrastructureManager,
+                AppRoles.Editor));
+
+
+    options.AddPolicy(
+        "CanManageVisits",
+        policy =>
+            policy.RequireRole(
+                AppRoles.Admin,
+                AppRoles.Editor));
+
+
+    options.AddPolicy(
+        "CanChangeStatus",
+        policy =>
+            policy.RequireRole(
+                AppRoles.Admin));
+    options.AddPolicy(
+    "CanViewVisits",
+    policy =>
+        policy.RequireRole(
+            AppRoles.Admin,
+            AppRoles.InfrastructureManager,
+            AppRoles.Editor,
+            AppRoles.InfrastructureViewer));
+
+
+    options.AddPolicy(
+        "CanViewVisitReport",
+        policy =>
+            policy.RequireRole(
+                AppRoles.Admin,
+                AppRoles.InfrastructureManager,
+                AppRoles.Editor,
+                AppRoles.InfrastructureViewer,
+                AppRoles.Viewer));
+});
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddHttpContextAccessor();
@@ -44,10 +133,20 @@ builder.Services.AddRazorPages(options =>
 QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
+
+
 using (var scope = app.Services.CreateScope())
 {
+    var services = scope.ServiceProvider;
+
+    var dbContext = services.GetRequiredService<ApplicationDbContext>();
+
+    // Automatically apply pending EF Core migrations
+    await dbContext.Database.MigrateAsync();
+
+    // Seed roles, users, and other initial data
     await DbInitializer.SeedAsync(
-        scope.ServiceProvider,
+        services,
         app.Configuration);
 }
 // Configure the HTTP request pipeline.
@@ -65,6 +164,7 @@ else
 app.UseHttpsRedirection();
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();

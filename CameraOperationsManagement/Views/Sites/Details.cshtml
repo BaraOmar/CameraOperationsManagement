@@ -1,0 +1,124 @@
+﻿@model CameraOperationsManagement.ViewModels.Sites.SiteDetailsViewModel
+
+@{
+    ViewData["Title"] = "Site Details";
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Site Details
+        </h2>
+
+        <p class="page-description">
+            View site information.
+        </p>
+    </div>
+
+    <div class="d-flex gap-2">
+
+        <a asp-action="History"
+               asp-route-id="@Model.Id"
+               class="btn btn-primary">
+            History
+        </a>
+
+        <a asp-action="Index"
+               class="btn btn-outline-secondary">
+            Back to Sites
+        </a>
+
+    </div>
+
+</div>
+
+
+<div class="app-card">
+
+    <div class="app-card-header">
+        <strong>Site Information</strong>
+    </div>
+
+    <div class="app-card-body">
+
+        <div class="row g-4">
+
+            <div class="col-md-4">
+
+                <div class="text-muted small mb-1">
+                    Site ID
+                </div>
+
+                <strong>
+                    @Model.Id
+                </strong>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="text-muted small mb-1">
+                    Site Name
+                </div>
+
+                <div>
+                    @Model.Name
+                </div>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <div class="text-muted small mb-1">
+                    Status
+                </div>
+
+                @if (Model.IsActive)
+                {
+                    <span class="badge bg-success-subtle text-success">
+                        Active
+                    </span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary-subtle text-secondary">
+                        Inactive
+                    </span>
+                }
+
+            </div>
+
+
+            <div class="col-md-6">
+
+                <div class="text-muted small mb-1">
+                    Location
+                </div>
+
+                <div>
+                    @(Model.Location ?? "—")
+                </div>
+
+            </div>
+
+
+            <div class="col-md-6">
+
+                <div class="text-muted small mb-1">
+                    Notes
+                </div>
+
+                <div>
+                    @(Model.Notes ?? "—")
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

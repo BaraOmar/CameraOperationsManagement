@@ -1,7 +1,15 @@
-﻿@model IEnumerable<CameraOperationsManagement.ViewModels.Recorders.RecorderListItemViewModel>
+﻿@using CameraOperationsManagement.Models
+@model IEnumerable<CameraOperationsManagement.ViewModels.Recorders.RecorderListItemViewModel>
 
 @{
     ViewData["Title"] = "Recorders";
+
+    var canManageInfrastructure =
+        User.IsInRole(AppRoles.Admin) ||
+        User.IsInRole(AppRoles.InfrastructureManager);
+
+    var canChangeStatus =
+        User.IsInRole(AppRoles.Admin);
 }
 
 <div class="page-header">
@@ -16,8 +24,7 @@
         </p>
     </div>
 
-    @if (User.IsInRole("Admin") ||
-         User.IsInRole("Editor"))
+    @if (canManageInfrastructure)
     {
         <a asp-action="Create"
                class="btn btn-primary">
@@ -59,13 +66,9 @@
                         <th>Storage</th>
                         <th>Status</th>
 
-                        @if (User.IsInRole("Admin") ||
-                             User.IsInRole("Editor"))
-                        {
-                            <th class="text-end">
-                                Actions
-                            </th>
-                        }
+                        <th class="text-end">
+                            Actions
+                        </th>
                     </tr>
                 </thead>
 
@@ -153,56 +156,69 @@
                             </td>
 
 
-                            @if (User.IsInRole("Admin") ||
-                                 User.IsInRole("Editor"))
-                            {
-                                <td class="text-end">
+                            <td class="text-end">
 
-                                    <div class="d-inline-flex gap-2">
-                                        @if (recorder.HasStorage)
-                                        {
-                                            <a asp-controller="RecorderHardDrives"
-                                                   asp-action="Index"
-                                                   asp-route-recorderId="@recorder.Id"
-                                                   class="btn btn-sm btn-outline-secondary">
-                                                Storage
-                                            </a>
-                                        }
+                                <div class="d-inline-flex gap-2">
+
+                                    <!-- Read-only storage information -->
+                                    @if (recorder.HasStorage)
+                                    {
+                                        <a asp-controller="RecorderHardDrives"
+                                               asp-action="Index"
+                                               asp-route-recorderId="@recorder.Id"
+                                               class="btn btn-sm btn-outline-secondary">
+                                            Storage
+                                        </a>
+                                    }
+
+
+                                    <!-- Available to every role that can access Recorders -->
+                                    <a asp-action="History"
+                                           asp-route-id="@recorder.Id"
+                                           class="btn btn-sm btn-outline-secondary">
+                                        History
+                                    </a>
+
+
+                                    <!-- Admin + Infrastructure Manager -->
+                                    @if (canManageInfrastructure)
+                                    {
                                         <a asp-action="Edit"
                                                asp-route-id="@recorder.Id"
                                                class="btn btn-sm btn-outline-secondary">
                                             Edit
                                         </a>
+                                    }
 
 
-                                        @if (User.IsInRole("Admin"))
-                                        {
-                                            <form asp-action="ToggleStatus"
-                                                  asp-route-id="@recorder.Id"
-                                                  method="post">
+                                    <!-- Admin only -->
+                                    @if (canChangeStatus)
+                                    {
+                                        <form asp-action="ToggleStatus"
+                                              asp-route-id="@recorder.Id"
+                                              method="post">
 
-                                                @if (recorder.IsActive)
-                                                {
-                                                    <button type="submit"
-                                                            class="btn btn-sm btn-outline-secondary">
-                                                        Deactivate
-                                                    </button>
-                                                }
-                                                else
-                                                {
-                                                    <button type="submit"
-                                                            class="btn btn-sm btn-outline-secondary">
-                                                        Activate
-                                                    </button>
-                                                }
+                                            @if (recorder.IsActive)
+                                            {
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-secondary">
+                                                    Deactivate
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-secondary">
+                                                    Activate
+                                                </button>
+                                            }
 
-                                            </form>
-                                        }
+                                        </form>
+                                    }
 
-                                    </div>
+                                </div>
 
-                                </td>
-                            }
+                            </td>
 
                         </tr>
                     }

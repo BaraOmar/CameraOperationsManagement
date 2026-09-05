@@ -1,0 +1,518 @@
+﻿@model CameraOperationsManagement.ViewModels.Visits.VisitFormViewModel
+@using CameraOperationsManagement.Models.Enums
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+<div asp-validation-summary="All"
+     class="text-danger mb-3">
+</div>
+
+
+<!-- TARGET -->
+<div class="app-card shadow-none mb-4">
+
+    <div class="app-card-header">
+        <strong>Visit Target</strong>
+    </div>
+
+    <div class="app-card-body">
+
+        <div class="row g-3">
+
+            <!-- SITE -->
+            <div class="col-md-4">
+
+                <label asp-for="SiteId"
+                       class="form-label">
+                </label>
+
+                <select asp-for="SiteId"
+                        asp-items="ViewBag.Sites"
+                        class="form-select"
+                        id="siteSelect">
+
+                    <option value="">
+                        Select site
+                    </option>
+
+                </select>
+
+                <span asp-validation-for="SiteId"
+                      class="text-danger">
+                </span>
+
+            </div>
+
+
+            <!-- COMPONENT TYPE -->
+            <div class="col-md-4">
+
+                <label asp-for="ComponentType"
+                       class="form-label">
+                </label>
+
+                <select asp-for="ComponentType"
+                        asp-items="Html.GetEnumSelectList<VisitComponentType>()"
+                        class="form-select"
+                        id="componentTypeSelect">
+
+                    <option value="">
+                        Select component type
+                    </option>
+
+                </select>
+
+                <span asp-validation-for="ComponentType"
+                      class="text-danger">
+                </span>
+
+            </div>
+
+
+            <!-- COMPONENT -->
+            <div class="col-md-4">
+
+                <label asp-for="ComponentId"
+                       class="form-label">
+                </label>
+
+                <select asp-for="ComponentId"
+                        class="form-select"
+                        id="componentSelect">
+
+                    <option value="">
+                        Select site and component type first
+                    </option>
+
+                </select>
+
+                <span asp-validation-for="ComponentId"
+                      class="text-danger">
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- VISIT INFORMATION -->
+<div class="app-card shadow-none mb-4">
+
+    <div class="app-card-header">
+        <strong>Visit Information</strong>
+    </div>
+
+    <div class="app-card-body">
+
+        <div class="row g-3">
+
+            <div class="col-md-4">
+
+                <label asp-for="VisitDate"
+                       class="form-label">
+                </label>
+
+                <input asp-for="VisitDate"
+                       asp-format="{0:yyyy-MM-ddTHH:mm}"
+                       type="datetime-local"
+                       class="form-control" />
+
+                <span asp-validation-for="VisitDate"
+                      class="text-danger">
+                </span>
+
+            </div>
+
+
+            <div class="col-md-8">
+
+                <label asp-for="Purpose"
+                       class="form-label">
+                </label>
+
+                <input asp-for="Purpose"
+                       class="form-control"
+                       placeholder="Reason for the visit" />
+
+                <span asp-validation-for="Purpose"
+                      class="text-danger">
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- WORKERS -->
+<div class="app-card shadow-none mb-4">
+
+    <div class="app-card-header">
+        <strong>Workers</strong>
+    </div>
+
+    <div class="app-card-body">
+
+        @{
+            var workers =
+                ViewBag.Workers as IEnumerable<SelectListItem>;
+        }
+
+        @if (workers == null || !workers.Any())
+        {
+            <div class="text-muted">
+                No active workers are available.
+            </div>
+        }
+        else
+        {
+            <div class="row g-2">
+
+                @foreach (var worker in workers)
+                {
+                    <div class="col-md-4">
+
+                        <div class="form-check">
+
+                            <input type="checkbox"
+                                   name="WorkerIds"
+                                   value="@worker.Value"
+                                   checked="@worker.Selected"
+                                   class="form-check-input"
+                                   id="worker_@worker.Value" />
+
+                            <label class="form-check-label"
+                                   for="worker_@worker.Value">
+                                @worker.Text
+                            </label>
+
+                        </div>
+
+                    </div>
+                }
+
+            </div>
+        }
+
+        <span asp-validation-for="WorkerIds"
+              class="text-danger">
+        </span>
+
+    </div>
+
+</div>
+
+
+<!-- MALFUNCTION -->
+<div class="app-card shadow-none mb-4">
+
+    <div class="app-card-header">
+
+        <strong>Malfunction</strong>
+
+        <div class="text-muted small mt-1">
+            Leave empty if no malfunction was found.
+        </div>
+
+    </div>
+
+    <div class="app-card-body">
+
+        <div class="row g-3">
+
+            <div class="col-md-6">
+
+                <label asp-for="MalfunctionType"
+                       class="form-label">
+                </label>
+
+                <input asp-for="MalfunctionType"
+                       class="form-control" />
+
+                <span asp-validation-for="MalfunctionType"
+                      class="text-danger">
+                </span>
+
+            </div>
+
+
+            <div class="col-12">
+
+                <label asp-for="MalfunctionDescription"
+                       class="form-label">
+                </label>
+
+                <textarea asp-for="MalfunctionDescription"
+                          rows="3"
+                              class="form-control">
+                </textarea>
+
+                    <span asp-validation-for="MalfunctionDescription"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- REPAIR -->
+    <div class="app-card shadow-none mb-4">
+
+        <div class="app-card-header">
+
+            <strong>Repair</strong>
+
+            <div class="text-muted small mt-1">
+                Record any repair work performed during this visit.
+            </div>
+
+        </div>
+
+        <div class="app-card-body">
+
+            <div class="row g-3">
+
+                <div class="col-12">
+
+                    <label asp-for="RepairWorkPerformed"
+                           class="form-label">
+                    </label>
+
+                    <textarea asp-for="RepairWorkPerformed"
+                              rows="3"
+                                  class="form-control">
+                </textarea>
+
+                        <span asp-validation-for="RepairWorkPerformed"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+
+                    <div class="col-md-6">
+
+                        <label asp-for="RepairResult"
+                               class="form-label">
+                        </label>
+
+                        <input asp-for="RepairResult"
+                               class="form-control" />
+
+                        <span asp-validation-for="RepairResult"
+                              class="text-danger">
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- NOTES -->
+        <div class="app-card shadow-none">
+
+            <div class="app-card-header">
+                <strong>Additional Notes</strong>
+            </div>
+
+            <div class="app-card-body">
+
+                <textarea asp-for="Notes"
+                          rows="4"
+                              class="form-control">
+        </textarea>
+
+                    <span asp-validation-for="Notes"
+                          class="text-danger">
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <script>
+                (() => {
+
+                    const siteSelect =
+                        document.getElementById("siteSelect");
+
+                    const typeSelect =
+                        document.getElementById("componentTypeSelect");
+
+                    const componentSelect =
+                        document.getElementById("componentSelect");
+
+                    const selectedComponentId =
+                        "@Model.ComponentId";
+
+
+                    async function loadComponents(
+                        preserveSelection = false) {
+
+                        const siteId =
+                            siteSelect.value;
+
+                        const componentType =
+                            typeSelect.value;
+
+
+                        componentSelect.innerHTML = "";
+
+
+                        if (!siteId || !componentType) {
+
+                            const option =
+                                document.createElement("option");
+
+                            option.value = "";
+
+                            option.textContent =
+                                "Select site and component type first";
+
+                            componentSelect.appendChild(option);
+
+                            componentSelect.disabled = true;
+
+                            return;
+                        }
+
+
+                        componentSelect.disabled = true;
+
+
+                        const loading =
+                            document.createElement("option");
+
+                        loading.value = "";
+
+                        loading.textContent =
+                            "Loading components...";
+
+                        componentSelect.appendChild(loading);
+
+
+                        try {
+
+                            const url =
+                                `@Url.Action("GetComponents", "Visits")` +
+                                `?siteId=${encodeURIComponent(siteId)}` +
+                                `&componentType=${encodeURIComponent(componentType)}`;
+
+
+                            const response =
+                                await fetch(url);
+
+
+                            if (!response.ok) {
+                                throw new Error();
+                            }
+
+
+                            const components =
+                                await response.json();
+
+
+                            componentSelect.innerHTML = "";
+
+
+                            const placeholder =
+                                document.createElement("option");
+
+                            placeholder.value = "";
+
+                            placeholder.textContent =
+                                components.length === 0
+                                    ? "No available components"
+                                    : "Select component";
+
+                            componentSelect.appendChild(
+                                placeholder);
+
+
+                            components.forEach(component => {
+
+                                const option =
+                                    document.createElement("option");
+
+                                option.value =
+                                    component.id;
+
+                                option.textContent =
+                                    component.name;
+
+
+                                if (preserveSelection &&
+                                    selectedComponentId &&
+                                    String(component.id) ===
+                                    selectedComponentId) {
+
+                                    option.selected = true;
+                                }
+
+
+                                componentSelect.appendChild(
+                                    option);
+                            });
+
+
+                            componentSelect.disabled =
+                                components.length === 0;
+
+                        }
+                        catch {
+
+                            componentSelect.innerHTML = "";
+
+
+                            const option =
+                                document.createElement("option");
+
+                            option.value = "";
+
+                            option.textContent =
+                                "Unable to load components";
+
+                            componentSelect.appendChild(option);
+
+                            componentSelect.disabled = true;
+                        }
+                    }
+
+
+                    siteSelect.addEventListener(
+                        "change",
+                        () => loadComponents(false));
+
+
+                    typeSelect.addEventListener(
+                        "change",
+                        () => loadComponents(false));
+
+
+                    if (siteSelect.value &&
+                        typeSelect.value) {
+
+                        loadComponents(true);
+                    }
+                    else {
+                        componentSelect.disabled = true;
+                    }
+
+                })();
+            </script>

@@ -1,21 +1,34 @@
-﻿@model IEnumerable<CameraOperationsManagement.ViewModels.Cameras.CameraListItemViewModel>
+﻿@using CameraOperationsManagement.Models
+
+@model IEnumerable<CameraOperationsManagement.ViewModels.Cameras.CameraListItemViewModel>
 
 @{
     ViewData["Title"] = "Cameras";
+
+    var canManageInfrastructure =
+        User.IsInRole(AppRoles.Admin) ||
+        User.IsInRole(AppRoles.InfrastructureManager);
+
+    var isAdmin =
+        User.IsInRole(AppRoles.Admin);
 }
 
 <div class="page-header">
 
     <div>
-        <h2 class="page-heading">Cameras</h2>
+        <h2 class="page-heading">
+            Cameras
+        </h2>
 
         <p class="page-description">
             View and manage cameras across all operational sites.
         </p>
     </div>
 
+
     <div class="d-flex gap-2">
 
+        <!-- Available to all roles that can access Cameras -->
         <a asp-action="ExportPdf"
                asp-route-search="@ViewBag.Search"
                asp-route-siteId="@Context.Request.Query["siteId"]"
@@ -29,8 +42,8 @@
         </a>
 
 
-        @if (User.IsInRole("Admin") ||
-             User.IsInRole("Editor"))
+        <!-- Admin + Infrastructure Manager -->
+        @if (canManageInfrastructure)
         {
             <a asp-action="Create"
                    class="btn btn-primary">
@@ -49,6 +62,7 @@
         @TempData["SuccessMessage"]
     </div>
 }
+
 
 <form method="get"
       asp-action="Index"
@@ -185,7 +199,7 @@
             </div>
 
 
-            <!-- ACTIONS -->
+            <!-- FILTER ACTIONS -->
             <div class="col-xl-3 col-md-6">
 
                 <div class="d-flex gap-2">
@@ -209,6 +223,8 @@
     </div>
 
 </form>
+
+
 <div class="app-card">
 
     @if (!Model.Any())
@@ -229,20 +245,18 @@
                         <th>Site</th>
                         <th>Recorder</th>
                         <th>Type</th>
+                        <th>Environment</th>
                         <th>IP Address</th>
                         <th>Location</th>
                         <th>Switch</th>
                         <th>Status</th>
 
-                        @if (User.IsInRole("Admin") ||
-                             User.IsInRole("Editor"))
-                        {
-                            <th class="text-end">
-                                Actions
-                            </th>
-                        }
+                        <th class="text-end">
+                            Actions
+                        </th>
                     </tr>
                 </thead>
+
 
                 <tbody>
 
@@ -251,6 +265,7 @@
                         <tr>
 
                             <td>
+
                                 <strong>
                                     @camera.Name
                                 </strong>
@@ -262,10 +277,12 @@
                                         @camera.Brand @camera.Model
                                     </div>
                                 }
+
                             </td>
 
 
                             <td>
+
                                 <div>
                                     @camera.SiteName
                                 </div>
@@ -273,6 +290,7 @@
                                 <small class="text-muted">
                                     @camera.SiteId
                                 </small>
+
                             </td>
 
 
@@ -282,26 +300,59 @@
 
 
                             <td>
+
                                 @if (string.IsNullOrWhiteSpace(camera.Type))
                                 {
-                                    <span class="text-muted">—</span>
+                                    <span class="text-muted">
+                                        —
+                                    </span>
                                 }
                                 else
                                 {
                                     @camera.Type
                                 }
+
                             </td>
 
 
                             <td>
-                                @if (string.IsNullOrWhiteSpace(camera.IpAddress))
+
+                                @if (camera.Environment ==
+                                     CameraOperationsManagement.Models.Enums
+                                         .CameraEnvironment.Internal)
                                 {
-                                    <span class="text-muted">—</span>
+                                    <span class="badge
+                                        bg-secondary-subtle
+                                        text-secondary">
+                                        Internal
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge
+                                        bg-info-subtle
+                                        text-info-emphasis">
+                                        External
+                                    </span>
+                                }
+
+                            </td>
+
+
+                            <td>
+
+                                @if (string.IsNullOrWhiteSpace(
+                                    camera.IpAddress))
+                                {
+                                    <span class="text-muted">
+                                        —
+                                    </span>
                                 }
                                 else
                                 {
                                     @camera.IpAddress
                                 }
+
                             </td>
 
 
@@ -311,71 +362,87 @@
 
 
                             <td>
+
                                 @if (string.IsNullOrWhiteSpace(
                                     camera.NetworkSwitchName))
                                 {
-                                    <span class="text-muted">—</span>
+                                    <span class="text-muted">
+                                        —
+                                    </span>
                                 }
                                 else
                                 {
                                     @camera.NetworkSwitchName
                                 }
+
                             </td>
 
 
                             <td>
+
                                 @if (camera.IsActive)
                                 {
-                                    <span class="badge bg-success-subtle text-success">
+                                    <span class="badge
+                                        bg-success-subtle
+                                        text-success">
                                         Active
                                     </span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-secondary-subtle text-secondary">
+                                    <span class="badge
+                                        bg-secondary-subtle
+                                        text-secondary">
                                         Inactive
                                     </span>
                                 }
+
                             </td>
 
 
-                            @if (User.IsInRole("Admin") ||
-                                 User.IsInRole("Editor"))
-                            {
-                                <td class="text-end">
+                            <td class="text-end">
 
-                                    <div class="d-inline-flex gap-2">
-                                        <a asp-action="History"
-                                               asp-route-id="@camera.Id"
-                                               class="btn btn-sm btn-outline-secondary">
-                                            History
-                                        </a>
+                                <div class="d-inline-flex gap-2">
+
+                                    <!-- All roles with Camera access -->
+                                    <a asp-action="History"
+                                           asp-route-id="@camera.Id"
+                                           class="btn btn-sm btn-outline-secondary">
+                                        History
+                                    </a>
+
+
+                                    <!-- Admin + Infrastructure Manager -->
+                                    @if (canManageInfrastructure)
+                                    {
                                         <a asp-action="Edit"
                                                asp-route-id="@camera.Id"
                                                class="btn btn-sm btn-outline-secondary">
                                             Edit
                                         </a>
+                                    }
 
-                                        @if (User.IsInRole("Admin"))
-                                        {
-                                            <form asp-action="ToggleStatus"
-                                                  asp-route-id="@camera.Id"
-                                                  method="post">
 
-                                                <button type="submit"
-                                                        class="btn btn-sm btn-outline-secondary">
-                                                    @(camera.IsActive
-                                                        ? "Deactivate"
-                                                        : "Activate")
-                                                </button>
+                                    <!-- Admin only -->
+                                    @if (isAdmin)
+                                    {
+                                        <form asp-action="ToggleStatus"
+                                              asp-route-id="@camera.Id"
+                                              method="post">
 
-                                            </form>
-                                        }
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-outline-secondary">
+                                                @(camera.IsActive
+                                                    ? "Deactivate"
+                                                    : "Activate")
+                                            </button>
 
-                                    </div>
+                                        </form>
+                                    }
 
-                                </td>
-                            }
+                                </div>
+
+                            </td>
 
                         </tr>
                     }

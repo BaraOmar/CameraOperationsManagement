@@ -1,14 +1,16 @@
 ﻿using CameraOperationsManagement.Data;
 using CameraOperationsManagement.Models;
+using CameraOperationsManagement.Models.Enums;
 using CameraOperationsManagement.Services;
 using CameraOperationsManagement.ViewModels.Sites;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 
 namespace CameraOperationsManagement.Controllers
 {
-    [Authorize(Roles = "Admin,Editor,Viewer")]
+    [Authorize(Policy = "CanViewSites")]
     public class SitesController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -25,26 +27,97 @@ namespace CameraOperationsManagement.Controllers
 
         // GET: Sites
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            string? search,
+            string? location,
+            string? status)
         {
-            var sites = await _context.Sites
+            var query = _context.Sites
                 .AsNoTracking()
-                .OrderBy(s => s.Name)
-                .Select(s => new SiteListItemViewModel
-                {
-                    Id = s.Id,
-                    Name = s.Name,
-                    Location = s.Location,
-                    IsActive = s.IsActive
-                })
+                .AsQueryable();
+
+
+            // SEARCH
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.Trim();
+
+                query = query.Where(s =>
+                    s.Id.Contains(search) ||
+                    s.Name.Contains(search) ||
+                    (s.Location != null &&
+                     s.Location.Contains(search)));
+            }
+
+
+            // LOCATION
+            if (!string.IsNullOrWhiteSpace(location))
+            {
+                query = query.Where(s =>
+                    s.Location == location);
+            }
+
+
+            // STATUS
+            if (status == "active")
+            {
+                query = query.Where(s =>
+                    s.IsActive);
+            }
+            else if (status == "inactive")
+            {
+                query = query.Where(s =>
+                    !s.IsActive);
+            }
+
+
+            var sites = await query
+                .OrderBy(s => s.Id)
+                .Select(s =>
+                    new SiteListItemViewModel
+                    {
+                        Id = s.Id,
+
+                        Name = s.Name,
+
+                        Location = s.Location,
+
+                        IsActive = s.IsActive
+                    })
                 .ToListAsync();
+
+
+            // LOCATION FILTER OPTIONS
+            var locations = await _context.Sites
+                .AsNoTracking()
+                .Where(s =>
+                    s.Location != null &&
+                    s.Location != "")
+                .Select(s => s.Location!)
+                .Distinct()
+                .OrderBy(l => l)
+                .ToListAsync();
+
+
+            ViewBag.Locations =
+                new SelectList(
+                    locations,
+                    location);
+
+
+            ViewBag.Search =
+                search;
+
+            ViewBag.Status =
+                status;
+
 
             return View(sites);
         }
 
 
         // GET: Sites/Create
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpGet]
         public IActionResult Create()
         {
@@ -53,7 +126,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // POST: Sites/Create
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
@@ -123,7 +196,7 @@ namespace CameraOperationsManagement.Controllers
         }
 
         // GET: Sites/Edit/ABC
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpGet]
         public async Task<IActionResult> Edit(string id)
         {
@@ -149,7 +222,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // POST: Sites/Edit/ABC
-        [Authorize(Roles = "Admin,Editor")]
+        [Authorize(Policy = "CanManageInfrastructure")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
@@ -200,7 +273,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // POST: Sites/ToggleStatus/ABC
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "CanChangeStatus")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleStatus(
@@ -262,7 +335,7 @@ namespace CameraOperationsManagement.Controllers
                 "application/pdf");
         }
         private async Task<SiteHistoryViewModel?>
-    GetSiteHistoryAsync(string id)
+            GetSiteHistoryAsync(string id)
         {
             return await _context.Sites
                 .AsNoTracking()
@@ -280,24 +353,39 @@ namespace CameraOperationsManagement.Controllers
                     IsActive = s.IsActive,
 
 
-                    SiteVisits = _context.SiteVisits
+                    Visits = _context.Visits
                         .Where(v =>
                             v.SiteId == s.Id)
                         .OrderByDescending(v =>
                             v.VisitDate)
                         .Select(v =>
-                            new SiteHistorySiteVisitViewModel
+                            new SiteHistoryVisitViewModel
                             {
-                                VisitId = v.Id,
+                                VisitId =
+                                    v.Id,
 
-                                VisitDate = v.VisitDate,
+                                VisitDate =
+                                    v.VisitDate,
 
-                                Purpose = v.Purpose,
+                                ComponentType =
+                                    v.ComponentType,
 
-                                Notes = v.Notes,
+                                ComponentName =
+                                    v.ComponentType ==
+                                        VisitComponentType.Recorder
+                                        ? v.Recorder!.Name
+
+                                        : v.ComponentType ==
+                                          VisitComponentType.Switch
+                                            ? v.NetworkSwitch!.Name
+
+                                            : v.Camera!.Name,
+
+                                Purpose =
+                                    v.Purpose,
 
                                 WorkerNames =
-                                    v.SiteVisitWorkers
+                                    v.VisitWorkers
                                         .OrderBy(vw =>
                                             vw.Worker.FirstName)
                                         .ThenBy(vw =>
@@ -308,32 +396,7 @@ namespace CameraOperationsManagement.Controllers
                                             vw.Worker.FirstName + " " +
                                             vw.Worker.SecondName + " " +
                                             vw.Worker.LastName)
-                                        .ToList()
-                            })
-                        .ToList(),
-
-
-                    CameraVisits = _context.CameraVisits
-                        .Where(v =>
-                            v.Camera.Recorder.SiteId == s.Id)
-                        .OrderByDescending(v =>
-                            v.VisitDate)
-                        .Select(v =>
-                            new SiteHistoryCameraVisitViewModel
-                            {
-                                VisitId = v.Id,
-
-                                CameraId =
-                                    v.CameraId,
-
-                                CameraName =
-                                    v.Camera.Name,
-
-                                VisitDate =
-                                    v.VisitDate,
-
-                                Purpose =
-                                    v.Purpose,
+                                        .ToList(),
 
                                 MalfunctionType =
                                     v.MalfunctionType,
@@ -348,25 +411,154 @@ namespace CameraOperationsManagement.Controllers
                                     v.RepairResult,
 
                                 Notes =
-                                    v.Notes,
-
-                                WorkerNames =
-                                    v.CameraVisitWorkers
-                                        .OrderBy(vw =>
-                                            vw.Worker.FirstName)
-                                        .ThenBy(vw =>
-                                            vw.Worker.SecondName)
-                                        .ThenBy(vw =>
-                                            vw.Worker.LastName)
-                                        .Select(vw =>
-                                            vw.Worker.FirstName + " " +
-                                            vw.Worker.SecondName + " " +
-                                            vw.Worker.LastName)
-                                        .ToList()
+                                    v.Notes
                             })
                         .ToList()
                 })
                 .FirstOrDefaultAsync();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Structure(string id)
+        {
+            var site = await GetSiteStructureAsync(id);
+
+            if (site == null)
+            {
+                return NotFound();
+            }
+
+            return View(site);
+        }
+        private async Task<SiteStructureViewModel?>
+    GetSiteStructureAsync(string id)
+        {
+            return await _context.Sites
+                .AsNoTracking()
+                .Where(s => s.Id == id)
+                .Select(s => new SiteStructureViewModel
+                {
+                    SiteId = s.Id,
+
+                    SiteName = s.Name,
+
+                    Location = s.Location,
+
+                    IsActive = s.IsActive,
+
+
+                    Recorders = _context.Recorders
+                        .Where(r => r.SiteId == s.Id)
+                        .OrderBy(r => r.Name)
+                        .Select(r =>
+                            new SiteStructureRecorderViewModel
+                            {
+                                Id = r.Id,
+
+                                Name = r.Name,
+
+                                Type = r.Type.ToString(),
+
+                                IsActive = r.IsActive,
+
+                                NetworkSwitchName =
+                                    r.NetworkSwitch != null
+                                        ? r.NetworkSwitch.Name
+                                        : null,
+
+                                Cameras = _context.Cameras
+                                    .Where(c =>
+                                        c.RecorderId == r.Id)
+                                    .OrderBy(c => c.Name)
+                                    .Select(c =>
+                                        new SiteStructureCameraViewModel
+                                        {
+                                            Id = c.Id,
+
+                                            Name = c.Name,
+
+                                            Type = c.Type,
+
+                                            IpAddress =
+                                                c.IpAddress,
+
+                                            InstallationLocation =
+                                                c.InstallationLocation,
+
+                                            IsActive =
+                                                c.IsActive
+                                        })
+                                    .ToList()
+                            })
+                        .ToList(),
+
+
+                    Switches = _context.NetworkSwitches
+                        .Where(sw => sw.SiteId == s.Id)
+                        .OrderBy(sw => sw.Name)
+                        .Select(sw =>
+                            new SiteStructureSwitchViewModel
+                            {
+                                Id = sw.Id,
+
+                                Name = sw.Name,
+
+                                IsActive = sw.IsActive
+                            })
+                        .ToList()
+                })
+                .FirstOrDefaultAsync();
+        }
+        [HttpGet]
+        public async Task<IActionResult> ExportStructurePdf(
+    string id)
+        {
+            var site = await GetSiteStructureAsync(id);
+
+            if (site == null)
+            {
+                return NotFound();
+            }
+
+
+            var pdfBytes =
+                _pdfService.GenerateSiteStructurePdf(site);
+
+
+            var fileName =
+                $"Site-Structure-{site.SiteId}.pdf";
+
+
+            Response.Headers.ContentDisposition =
+                $"inline; filename=\"{fileName}\"";
+
+
+            return File(
+                pdfBytes,
+                "application/pdf");
+        }
+        [HttpGet]
+        public async Task<IActionResult> Details(string id)
+        {
+            var site = await _context.Sites
+                .AsNoTracking()
+                .Where(s => s.Id == id)
+                .Select(s => new SiteDetailsViewModel
+                {
+                    Id = s.Id,
+                    Name = s.Name,
+                    Location = s.Location,
+                    Notes = s.Notes,
+                    IsActive = s.IsActive
+                })
+                .FirstOrDefaultAsync();
+
+            if (site == null)
+            {
+                return NotFound();
+            }
+
+            return View(site);
         }
     }
 }

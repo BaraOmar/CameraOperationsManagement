@@ -1,4 +1,6 @@
-﻿namespace CameraOperationsManagement.ViewModels.Cameras
+﻿using CameraOperationsManagement.Models.Enums;
+
+namespace CameraOperationsManagement.ViewModels.Cameras
 {
     public class CameraListItemViewModel
     {
@@ -12,6 +14,7 @@
 
         public string? Type { get; set; }
 
+        public CameraEnvironment Environment { get; set; }
         public string? IpAddress { get; set; }
 
         public string InstallationLocation { get; set; }

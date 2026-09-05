@@ -8,42 +8,19 @@
 
         public int ActiveWorkers { get; set; }
 
-        public int TotalCameraVisits { get; set; }
+        public int TotalVisits { get; set; }
 
 
-        public List<RecentCameraVisitViewModel> RecentCameraVisits
-        { get; set; } = new();
-
-
-        public List<RecentSiteVisitViewModel> RecentSiteVisits
+        public List<RecentVisitViewModel> RecentVisits
         { get; set; } = new();
     }
 
 
-    public class RecentCameraVisitViewModel
+    public class RecentVisitViewModel
     {
         public int VisitId { get; set; }
-
-        public string CameraName { get; set; }
-            = string.Empty;
-
-        public string SiteName { get; set; }
-            = string.Empty;
 
         public DateTime VisitDate { get; set; }
-
-        public string Purpose { get; set; }
-            = string.Empty;
-
-        public string? MalfunctionType { get; set; }
-
-        public string? RepairResult { get; set; }
-    }
-
-
-    public class RecentSiteVisitViewModel
-    {
-        public int VisitId { get; set; }
 
         public string SiteId { get; set; }
             = string.Empty;
@@ -51,9 +28,17 @@
         public string SiteName { get; set; }
             = string.Empty;
 
-        public DateTime VisitDate { get; set; }
+        public string ComponentType { get; set; }
+            = string.Empty;
+
+        public string ComponentName { get; set; }
+            = string.Empty;
 
         public string Purpose { get; set; }
             = string.Empty;
+
+        public string? MalfunctionType { get; set; }
+
+        public string? RepairResult { get; set; }
     }
 }

@@ -1,7 +1,23 @@
-﻿@model CameraOperationsManagement.ViewModels.Dashboard.DashboardViewModel
+﻿@using CameraOperationsManagement.Models
+
+@model CameraOperationsManagement.ViewModels.Dashboard.DashboardViewModel
 
 @{
     ViewData["Title"] = "Dashboard";
+
+    var canManageVisits =
+        User.IsInRole(AppRoles.Admin) ||
+        User.IsInRole(AppRoles.Editor);
+
+    var canViewWorkers =
+        User.IsInRole(AppRoles.Admin) ||
+        User.IsInRole(AppRoles.InfrastructureManager) ||
+        User.IsInRole(AppRoles.Editor);
+
+    var statColumnClass =
+        canViewWorkers
+            ? "col-sm-6 col-xl-3"
+            : "col-sm-6 col-xl-4";
 }
 
 <div class="page-header">
@@ -16,14 +32,25 @@
         </p>
     </div>
 
+
+    @if (canManageVisits)
+    {
+        <a asp-controller="Visits"
+               asp-action="Create"
+               class="btn btn-primary">
+            Record Visit
+        </a>
+    }
+
 </div>
 
 
 <!-- SUMMARY CARDS -->
 <div class="row g-3 mb-4">
 
+
     <!-- ACTIVE SITES -->
-    <div class="col-sm-6 col-xl-3">
+    <div class="@statColumnClass">
 
         <div class="dashboard-stat-card">
 
@@ -47,7 +74,8 @@
 
                     View sites
 
-                    <span class="arrow" aria-hidden="true">
+                    <span class="arrow"
+                          aria-hidden="true">
                         →
                     </span>
 
@@ -60,8 +88,9 @@
     </div>
 
 
+
     <!-- ACTIVE CAMERAS -->
-    <div class="col-sm-6 col-xl-3">
+    <div class="@statColumnClass">
 
         <div class="dashboard-stat-card">
 
@@ -85,7 +114,8 @@
 
                     View cameras
 
-                    <span class="arrow" aria-hidden="true">
+                    <span class="arrow"
+                          aria-hidden="true">
                         →
                     </span>
 
@@ -96,72 +126,79 @@
         </div>
 
     </div>
+
 
 
     <!-- ACTIVE WORKERS -->
-    <div class="col-sm-6 col-xl-3">
+    @if (canViewWorkers)
+    {
+        <div class="@statColumnClass">
 
-        <div class="dashboard-stat-card">
+            <div class="dashboard-stat-card">
 
-            <div class="dashboard-stat-body">
+                <div class="dashboard-stat-body">
 
-                <div class="dashboard-stat-label">
-                    ACTIVE WORKERS
+                    <div class="dashboard-stat-label">
+                        ACTIVE WORKERS
+                    </div>
+
+                    <div class="dashboard-stat-value">
+                        @Model.ActiveWorkers
+                    </div>
+
+                    <div class="dashboard-stat-description">
+                        Available operational staff
+                    </div>
+
+                    <a asp-controller="Workers"
+                           asp-action="Index"
+                           class="dashboard-stat-link">
+
+                        View workers
+
+                        <span class="arrow"
+                              aria-hidden="true">
+                            →
+                        </span>
+
+                    </a>
+
                 </div>
-
-                <div class="dashboard-stat-value">
-                    @Model.ActiveWorkers
-                </div>
-
-                <div class="dashboard-stat-description">
-                    Available operational staff
-                </div>
-
-                <a asp-controller="Workers"
-                       asp-action="Index"
-                       class="dashboard-stat-link">
-
-                    View workers
-
-                    <span class="arrow" aria-hidden="true">
-                        →
-                    </span>
-
-                </a>
 
             </div>
 
         </div>
+    }
 
-    </div>
 
 
-    <!-- CAMERA VISITS -->
-    <div class="col-sm-6 col-xl-3">
+    <!-- TOTAL VISITS -->
+    <div class="@statColumnClass">
 
         <div class="dashboard-stat-card">
 
             <div class="dashboard-stat-body">
 
                 <div class="dashboard-stat-label">
-                    CAMERA VISITS
+                    TOTAL VISITS
                 </div>
 
                 <div class="dashboard-stat-value">
-                    @Model.TotalCameraVisits
+                    @Model.TotalVisits
                 </div>
 
                 <div class="dashboard-stat-description">
                     Recorded maintenance visits
                 </div>
 
-                <a asp-controller="CameraVisits"
+                <a asp-controller="Visits"
                        asp-action="Index"
                        class="dashboard-stat-link">
 
                     View visits
 
-                    <span class="arrow" aria-hidden="true">
+                    <span class="arrow"
+                          aria-hidden="true">
                         →
                     </span>
 
@@ -175,240 +212,159 @@
 
 </div>
 
-<!-- QUICK ACTIONS -->
-@if (User.IsInRole("Admin") ||
-     User.IsInRole("Editor"))
-{
-    <div class="app-card mb-4">
-
-        <div class="app-card-header">
-            <strong>Quick Actions</strong>
-        </div>
-
-        <div class="app-card-body">
-
-            <div class="d-flex flex-wrap gap-2">
-
-                <a asp-controller="CameraVisits"
-                       asp-action="Create"
-                       class="btn btn-primary">
-                    Record Camera Visit
-                </a>
-
-                <a asp-controller="SiteVisits"
-                       asp-action="Create"
-                       class="btn btn-outline-secondary">
-                    Record Site Visit
-                </a>
-
-            </div>
-
-        </div>
-
-    </div>
-}
 
 
-<div class="row g-4">
+<!-- RECENT VISITS -->
+<div class="app-card">
 
-    <!-- RECENT CAMERA VISITS -->
-    <div class="col-xl-7">
+    <div class="app-card-header
+        d-flex
+        justify-content-between
+        align-items-center">
 
-        <div class="app-card h-100">
+        <strong>
+            Recent Visits
+        </strong>
 
-            <div class="app-card-header d-flex justify-content-between align-items-center">
-
-                <strong>
-                    Recent Camera Visits
-                </strong>
-
-                <a asp-controller="CameraVisits"
-                       asp-action="Index"
-                       class="btn btn-sm btn-outline-secondary">
-                    View All
-                </a>
-
-            </div>
-
-
-            @if (!Model.RecentCameraVisits.Any())
-            {
-                <div class="app-card-body text-center text-muted py-5">
-                    No camera visits have been recorded.
-                </div>
-            }
-            else
-            {
-                <div class="table-responsive">
-
-                    <table class="table mb-0">
-
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Camera</th>
-                                <th>Site</th>
-                                <th>Purpose</th>
-                                <th>Result</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-
-                            @foreach (var visit in Model.RecentCameraVisits)
-                            {
-                                <tr>
-
-                                    <td>
-                                        <div>
-                                            @visit.VisitDate.ToString("dd/MM/yyyy")
-                                        </div>
-
-                                        <small class="text-muted">
-                                            @visit.VisitDate.ToString("HH:mm")
-                                        </small>
-                                    </td>
-
-
-                                    <td>
-                                        <strong>
-                                            @visit.CameraName
-                                        </strong>
-                                    </td>
-
-
-                                    <td>
-                                        @visit.SiteName
-                                    </td>
-
-
-                                    <td>
-                                        @visit.Purpose
-                                    </td>
-
-
-                                    <td>
-                                        @if (!string.IsNullOrWhiteSpace(
-                                            visit.RepairResult))
-                                        {
-                                            @visit.RepairResult
-                                        }
-                                        else if (!string.IsNullOrWhiteSpace(
-                                            visit.MalfunctionType))
-                                        {
-                                            <span class="text-muted">
-                                                @visit.MalfunctionType
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-success-subtle text-success">
-                                                No malfunction
-                                            </span>
-                                        }
-                                    </td>
-
-
-                                    <td class="text-end">
-
-                                        <a asp-controller="CameraVisits"
-                                               asp-action="Details"
-                                               asp-route-id="@visit.VisitId"
-                                               class="btn btn-sm btn-outline-secondary">
-                                            View
-                                        </a>
-
-                                    </td>
-
-                                </tr>
-                            }
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-            }
-
-        </div>
+        <a asp-controller="Visits"
+               asp-action="Index"
+               class="btn btn-sm btn-outline-secondary">
+            View All
+        </a>
 
     </div>
 
 
-    <!-- RECENT SITE VISITS -->
-    <div class="col-xl-5">
+    @if (!Model.RecentVisits.Any())
+    {
+        <div class="app-card-body
+            text-center
+            text-muted
+            py-5">
 
-        <div class="app-card h-100">
+            No visits have been recorded yet.
 
-            <div class="app-card-header d-flex justify-content-between align-items-center">
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
 
-                <strong>
-                    Recent Site Visits
-                </strong>
+            <table class="table mb-0">
 
-                <a asp-controller="SiteVisits"
-                       asp-action="Index"
-                       class="btn btn-sm btn-outline-secondary">
-                    View All
-                </a>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Site</th>
+                        <th>Component</th>
+                        <th>Purpose</th>
+                        <th>Malfunction</th>
+                        <th>Repair Result</th>
+                        <th></th>
+                    </tr>
+                </thead>
 
-            </div>
 
+                <tbody>
 
-            @if (!Model.RecentSiteVisits.Any())
-            {
-                <div class="app-card-body text-center text-muted py-5">
-                    No site visits have been recorded.
-                </div>
-            }
-            else
-            {
-                <div class="app-card-body">
+                    @foreach (var visit in Model.RecentVisits)
+                    {
+                        <tr>
 
-                    <div class="d-flex flex-column gap-3">
+                            <td>
 
-                        @foreach (var visit in Model.RecentSiteVisits)
-                        {
-                            <div class="border-bottom pb-3">
-
-                                <div class="d-flex justify-content-between gap-3">
-
-                                    <div>
-
-                                        <strong>
-                                            @visit.SiteName
-                                        </strong>
-
-                                        <div class="text-muted small">
-                                            @visit.SiteId
-                                        </div>
-
-                                    </div>
-
-                                    <div class="text-muted small text-end">
-                                        @visit.VisitDate.ToString("dd/MM/yyyy")
-                                        <br />
-                                        @visit.VisitDate.ToString("HH:mm")
-                                    </div>
-
+                                <div>
+                                    @(visit.VisitDate.ToString(
+                                        "dd/MM/yyyy"))
                                 </div>
 
+                                <small class="text-muted">
+                                    @(visit.VisitDate.ToString(
+                                        "HH:mm"))
+                                </small>
 
-                                <div class="mt-2">
-                                    @visit.Purpose
+                            </td>
+
+
+                            <td>
+
+                                <strong>
+                                    @visit.SiteName
+                                </strong>
+
+                                <div class="text-muted small">
+                                    @visit.SiteId
                                 </div>
 
-                            </div>
-                        }
+                            </td>
 
-                    </div>
 
-                </div>
-            }
+                            <td>
+
+                                <strong>
+                                    @visit.ComponentName
+                                </strong>
+
+                                <div class="text-muted small">
+                                    @visit.ComponentType
+                                </div>
+
+                            </td>
+
+
+                            <td>
+                                @visit.Purpose
+                            </td>
+
+
+                            <td>
+
+                                @if (string.IsNullOrWhiteSpace(
+                                    visit.MalfunctionType))
+                                {
+                                    <span class="badge
+                                        bg-success-subtle
+                                        text-success">
+                                        None
+                                    </span>
+                                }
+                                else
+                                {
+                                    @visit.MalfunctionType
+                                }
+
+                            </td>
+
+
+                            <td>
+
+                                @(string.IsNullOrWhiteSpace(
+                                    visit.RepairResult)
+                                    ? "—"
+                                    : visit.RepairResult)
+
+                            </td>
+
+
+                            <td class="text-end">
+
+                                <a asp-controller="Visits"
+                                       asp-action="Details"
+                                       asp-route-id="@visit.VisitId"
+                                       class="btn btn-sm btn-outline-secondary">
+                                    View
+                                </a>
+
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
 
         </div>
-
-    </div>
+    }
 
 </div>

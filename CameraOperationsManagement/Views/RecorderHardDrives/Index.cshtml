@@ -1,7 +1,15 @@
-﻿@model CameraOperationsManagement.ViewModels.RecorderHardDrives.RecorderHardDriveListViewModel
+﻿@using CameraOperationsManagement.Models
+@model CameraOperationsManagement.ViewModels.RecorderHardDrives.RecorderHardDriveListViewModel
 
 @{
     ViewData["Title"] = "Recorder Storage";
+
+    var canManageInfrastructure =
+        User.IsInRole(AppRoles.Admin) ||
+        User.IsInRole(AppRoles.InfrastructureManager);
+
+    var isAdmin =
+        User.IsInRole(AppRoles.Admin);
 }
 
 <div class="page-header">
@@ -16,8 +24,7 @@
         </p>
     </div>
 
-    @if ((User.IsInRole("Admin") ||
-          User.IsInRole("Editor")) &&
+    @if (canManageInfrastructure &&
          Model.RecorderIsActive)
     {
         <a asp-action="Create"
@@ -40,7 +47,10 @@
 
 <div class="app-card">
 
-    <div class="app-card-header d-flex justify-content-between align-items-center">
+    <div class="app-card-header
+        d-flex
+        justify-content-between
+        align-items-center">
 
         <div>
             <strong>Total Storage</strong>
@@ -69,17 +79,23 @@
 
                 <thead>
                     <tr>
-                        <th>Capacity</th>
-                        <th>Serial Number</th>
 
-                        @if ((User.IsInRole("Admin") ||
-                              User.IsInRole("Editor")) &&
+                        <th>
+                            Capacity
+                        </th>
+
+                        <th>
+                            Serial Number
+                        </th>
+
+                        @if (canManageInfrastructure &&
                              Model.RecorderIsActive)
                         {
                             <th class="text-end">
                                 Actions
                             </th>
                         }
+
                     </tr>
                 </thead>
 
@@ -95,7 +111,9 @@
                                 </strong>
                             </td>
 
+
                             <td>
+
                                 @if (string.IsNullOrWhiteSpace(
                                     drive.SerialNumber))
                                 {
@@ -107,33 +125,39 @@
                                 {
                                     @drive.SerialNumber
                                 }
+
                             </td>
 
 
-                            @if ((User.IsInRole("Admin") ||
-                                  User.IsInRole("Editor")) &&
+                            @if (canManageInfrastructure &&
                                  Model.RecorderIsActive)
                             {
                                 <td class="text-end">
 
                                     <div class="d-inline-flex gap-2">
 
+                                        <!-- Admin + Infrastructure Manager -->
                                         <a asp-action="Edit"
                                                asp-route-id="@drive.Id"
                                                class="btn btn-sm btn-outline-secondary">
                                             Edit
                                         </a>
 
-                                        <form asp-action="Delete"
-                                              asp-route-id="@drive.Id"
-                                              method="post">
 
-                                            <button type="submit"
-                                                    class="btn btn-sm btn-outline-secondary">
-                                                Remove
-                                            </button>
+                                        <!-- Admin only -->
+                                        @if (isAdmin)
+                                        {
+                                            <form asp-action="Delete"
+                                                  asp-route-id="@drive.Id"
+                                                  method="post">
 
-                                        </form>
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-secondary">
+                                                    Remove
+                                                </button>
+
+                                            </form>
+                                        }
 
                                     </div>
 

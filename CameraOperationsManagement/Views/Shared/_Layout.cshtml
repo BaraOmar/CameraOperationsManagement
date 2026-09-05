@@ -8,33 +8,83 @@
         ? await UserManager.GetUserAsync(User)
         : null;
 
+
     var role =
-        User.IsInRole("Admin") ? "Admin" :
-        User.IsInRole("Editor") ? "Editor" :
-        User.IsInRole("Viewer") ? "Viewer" :
-        string.Empty;
+        User.IsInRole(AppRoles.Admin)
+            ? "Admin"
+
+        : User.IsInRole(AppRoles.InfrastructureManager)
+            ? "Infrastructure Manager"
+
+        : User.IsInRole(AppRoles.Editor)
+            ? "Editor"
+
+        : User.IsInRole(AppRoles.InfrastructureViewer)
+            ? "Infrastructure Viewer"
+
+        : User.IsInRole(AppRoles.Viewer)
+            ? "Viewer"
+
+        : string.Empty;
+
 
     var fullName = currentUser == null
         ? string.Empty
         : $"{currentUser.FirstName} {currentUser.SecondName} {currentUser.LastName}";
 
+
     var initials = currentUser == null
         ? string.Empty
         : $"{currentUser.FirstName.FirstOrDefault()}{currentUser.LastName.FirstOrDefault()}";
+
+
+    var canViewDashboard =
+        User.IsInRole(AppRoles.Admin) ||
+        User.IsInRole(AppRoles.InfrastructureManager) ||
+        User.IsInRole(AppRoles.Editor) ||
+        User.IsInRole(AppRoles.InfrastructureViewer);
+
+
+    var canViewFullInfrastructure =
+        User.IsInRole(AppRoles.Admin) ||
+        User.IsInRole(AppRoles.InfrastructureManager) ||
+        User.IsInRole(AppRoles.Editor) ||
+        User.IsInRole(AppRoles.InfrastructureViewer);
+
+
+    var canViewWorkers =
+        User.IsInRole(AppRoles.Admin) ||
+        User.IsInRole(AppRoles.InfrastructureManager) ||
+        User.IsInRole(AppRoles.Editor);
+
+
+    var canViewVisits =
+        User.IsInRole(AppRoles.Admin) ||
+        User.IsInRole(AppRoles.InfrastructureManager) ||
+        User.IsInRole(AppRoles.Editor) ||
+        User.IsInRole(AppRoles.InfrastructureViewer);
+
+
+    var canManageUsers =
+        User.IsInRole(AppRoles.Admin);
 }
+
 
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
+
     <meta charset="utf-8" />
 
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0" />
 
+
     <title>
         @ViewData["Title"] - Camera Operations
     </title>
+
 
     <link rel="stylesheet"
           href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -46,6 +96,7 @@
     <link rel="stylesheet"
           href="~/CameraOperationsManagement.styles.css"
           asp-append-version="true" />
+
 </head>
 
 
@@ -55,15 +106,20 @@
     {
         <div class="app-shell">
 
+
             <!-- SIDEBAR -->
             <aside class="app-sidebar">
 
+
+                <!-- BRAND -->
                 <div class="sidebar-brand">
+
                     <div class="brand-mark">
                         CO
                     </div>
 
                     <div>
+
                         <div class="brand-title">
                             Camera Operations
                         </div>
@@ -71,125 +127,188 @@
                         <div class="brand-subtitle">
                             Management System
                         </div>
+
                     </div>
+
                 </div>
 
 
+
+                <!-- NAVIGATION -->
                 <nav class="sidebar-nav">
 
-                    <div class="sidebar-section">
-                        OVERVIEW
-                    </div>
 
-                    <a asp-controller="Home"
-                           asp-action="Index"
-                           class="sidebar-link">
-                        Dashboard
-                    </a>
-
-
-                    <div class="sidebar-section">
-                        INFRASTRUCTURE
-                    </div>
-
-                    <a asp-controller="Sites"
-                           asp-action="Index"
-                           class="sidebar-link">
-                        Sites
-                    </a>
-
-                    <a asp-controller="Recorders"
-                           asp-action="Index"
-                           class="sidebar-link">
-                        Recorders
-                    </a>
-
-                    <a asp-controller="Cameras"
-                           asp-action="Index"
-                           class="sidebar-link">
-                        Cameras
-                    </a>
-
-                    <a asp-controller="NetworkSwitches"
-                           asp-action="Index"
-                           class="sidebar-link">
-                        Switches
-                    </a>
-
-
-                    <div class="sidebar-section">
-                        OPERATIONS
-                    </div>
-
-                    <a asp-controller="Workers"
-                           asp-action="Index"
-                           class="sidebar-link">
-                        Workers
-                    </a>
-
-                    <a asp-controller="SiteVisits"
-                           asp-action="Index"
-                           class="sidebar-link">
-                        Site Visits
-                    </a>
-
-                    <a asp-controller="CameraVisits"
-                           asp-action="Index"
-                           class="sidebar-link">
-                        Camera Visits
-                    </a>
-
-
-@* 
-                    <div class="sidebar-section">
-                        HISTORY
-                    </div>
-
-                    <a asp-controller="AuditLogs"
-                           asp-action="Index"
-                           class="sidebar-link">
-                        Audit History
-                    </a> *@
-
-
-                    @if (User.IsInRole("Admin"))
+                    <!-- OVERVIEW -->
+                    @if (canViewDashboard)
                     {
                         <div class="sidebar-section">
-                            ADMINISTRATION
+
+                            <div class="sidebar-section-title">
+                                OVERVIEW
+                            </div>
+
+                            <a asp-controller="Home"
+                                   asp-action="Index"
+                                   class="sidebar-link">
+                                Dashboard
+                            </a>
+
+                        </div>
+                    }
+
+
+
+                    <!-- INFRASTRUCTURE -->
+                    <div class="sidebar-section">
+
+                        <div class="sidebar-section-title">
+                            INFRASTRUCTURE
                         </div>
 
-                        <a asp-controller="Users"
+
+                        <!-- All five roles -->
+                        <a asp-controller="Sites"
                                asp-action="Index"
                                class="sidebar-link">
-                            Users
+                            Sites
                         </a>
+
+
+                        <!-- Everything except basic Viewer -->
+                        @if (canViewFullInfrastructure)
+                        {
+                            <a asp-controller="Recorders"
+                                   asp-action="Index"
+                                   class="sidebar-link">
+                                Recorders
+                            </a>
+
+
+                            <a asp-controller="Cameras"
+                                   asp-action="Index"
+                                   class="sidebar-link">
+                                Cameras
+                            </a>
+
+
+                            <a asp-controller="NetworkSwitches"
+                                   asp-action="Index"
+                                   class="sidebar-link">
+                                Switches
+                            </a>
+                        }
+
+                    </div>
+
+
+
+                    <!-- OPERATIONS -->
+                    @if (canViewWorkers || canViewVisits)
+                    {
+                        <div class="sidebar-section">
+
+                            <div class="sidebar-section-title">
+                                OPERATIONS
+                            </div>
+
+
+                            @if (canViewWorkers)
+                            {
+                                <a asp-controller="Workers"
+                                       asp-action="Index"
+                                       class="sidebar-link">
+                                    Workers
+                                </a>
+                            }
+
+
+                            @if (canViewVisits)
+                            {
+                                <a asp-controller="Visits"
+                                       asp-action="Index"
+                                       class="sidebar-link">
+                                    Visits
+                                </a>
+                            }
+
+                        </div>
                     }
+
+
+
+                    @*
+                    <!-- HISTORY - NOT USED FOR NOW -->
+
+                    <div class="sidebar-section">
+
+                        <div class="sidebar-section-title">
+                            HISTORY
+                        </div>
+
+                        <a asp-controller="AuditLogs"
+                           asp-action="Index"
+                           class="sidebar-link">
+                            Audit History
+                        </a>
+
+                    </div>
+                    *@
+
+
+
+                    <!-- ADMINISTRATION -->
+                    @if (canManageUsers)
+                    {
+                        <div class="sidebar-section">
+
+                            <div class="sidebar-section-title">
+                                ADMINISTRATION
+                            </div>
+
+
+                            <a asp-controller="Users"
+                                   asp-action="Index"
+                                   class="sidebar-link">
+                                Users
+                            </a>
+
+                        </div>
+                    }
+
 
                 </nav>
 
             </aside>
 
 
+
             <!-- MAIN AREA -->
             <div class="app-main">
+
 
                 <!-- TOP BAR -->
                 <header class="app-topbar">
 
                     <div>
+
                         <h1 class="page-title">
                             @ViewData["Title"]
                         </h1>
+
                     </div>
 
 
+
                     <div class="topbar-user">
+
 
                         <div class="user-avatar">
                             @initials
                         </div>
 
+
                         <div class="user-info">
+
                             <div class="user-name">
                                 @fullName
                             </div>
@@ -197,7 +316,9 @@
                             <div class="user-role">
                                 @role
                             </div>
+
                         </div>
+
 
 
                         <form asp-area="Identity"
@@ -212,9 +333,11 @@
 
                         </form>
 
+
                     </div>
 
                 </header>
+
 
 
                 <!-- PAGE CONTENT -->
@@ -224,6 +347,7 @@
 
                 </main>
 
+
             </div>
 
         </div>
@@ -231,9 +355,12 @@
     else
     {
         <main class="public-content">
+
             @RenderBody()
+
         </main>
     }
+
 
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
@@ -244,9 +371,11 @@
             asp-append-version="true">
     </script>
 
+
     @await RenderSectionAsync(
         "Scripts",
         required: false)
 
 </body>
+
 </html>

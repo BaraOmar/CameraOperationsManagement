@@ -34,6 +34,10 @@ namespace CameraOperationsManagement.Data
         public DbSet<CameraVisitWorker> CameraVisitWorkers { get; set; }
 
         public DbSet<AuditLog> AuditLogs { get; set; }
+
+        public DbSet<Visit> Visits { get; set; }
+
+        public DbSet<VisitWorker> VisitWorkers { get; set; }
         protected override void OnModelCreating(
             ModelBuilder builder)
         {
@@ -148,6 +152,99 @@ namespace CameraOperationsManagement.Data
                 .WithMany()
                 .HasForeignKey(vw => vw.WorkerId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // =========================
+            // VISIT
+            // =========================
+
+            builder.Entity<Visit>()
+                .HasOne(v => v.Site)
+                .WithMany()
+                .HasForeignKey(v => v.SiteId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+            builder.Entity<Visit>()
+                .HasOne(v => v.Recorder)
+                .WithMany()
+                .HasForeignKey(v => v.RecorderId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+            builder.Entity<Visit>()
+                .HasOne(v => v.NetworkSwitch)
+                .WithMany()
+                .HasForeignKey(v => v.NetworkSwitchId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+            builder.Entity<Visit>()
+                .HasOne(v => v.Camera)
+                .WithMany()
+                .HasForeignKey(v => v.CameraId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // =========================
+            // VISIT WORKERS
+            // =========================
+
+            builder.Entity<VisitWorker>()
+                .HasKey(vw => new
+                {
+                    vw.VisitId,
+                    vw.WorkerId
+                });
+
+
+            builder.Entity<VisitWorker>()
+                .HasOne(vw => vw.Visit)
+                .WithMany(v => v.VisitWorkers)
+                .HasForeignKey(vw => vw.VisitId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+
+            builder.Entity<VisitWorker>()
+                .HasOne(vw => vw.Worker)
+                .WithMany()
+                .HasForeignKey(vw => vw.WorkerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Visit>()
+    .ToTable(
+        "Visits",
+        table =>
+        {
+            table.HasCheckConstraint(
+                "CK_Visits_Component",
+                """
+                (
+                    [ComponentType] = 1
+                    AND [RecorderId] IS NOT NULL
+                    AND [NetworkSwitchId] IS NULL
+                    AND [CameraId] IS NULL
+                )
+                OR
+                (
+                    [ComponentType] = 2
+                    AND [RecorderId] IS NULL
+                    AND [NetworkSwitchId] IS NOT NULL
+                    AND [CameraId] IS NULL
+                )
+                OR
+                (
+                    [ComponentType] = 3
+                    AND [RecorderId] IS NULL
+                    AND [NetworkSwitchId] IS NULL
+                    AND [CameraId] IS NOT NULL
+                )
+                """);
+        });
+            builder.Entity<Visit>()
+    .HasIndex(v => new
+    {
+        v.SiteId,
+        v.VisitDate
+    });
         }
     }
 }

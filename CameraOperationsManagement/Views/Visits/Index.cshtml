@@ -1,0 +1,206 @@
+﻿@using CameraOperationsManagement.Models
+
+@model IEnumerable<CameraOperationsManagement.ViewModels.Visits.VisitListItemViewModel>
+
+@{
+    ViewData["Title"] = "Visits";
+
+    var canManageVisits =
+        User.IsInRole(AppRoles.Admin) ||
+        User.IsInRole(AppRoles.Editor);
+}
+
+<div class="page-header">
+
+    <div>
+        <h2 class="page-heading">
+            Visits
+        </h2>
+
+        <p class="page-description">
+            View and manage operational visits for site components.
+        </p>
+    </div>
+
+
+    @if (canManageVisits)
+    {
+        <a asp-action="Create"
+               class="btn btn-primary">
+            Record Visit
+        </a>
+    }
+
+</div>
+
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+
+<div class="app-card">
+
+    @if (!Model.Any())
+    {
+        <div class="app-card-body text-center text-muted py-5">
+            No visits have been recorded yet.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+
+            <table class="table">
+
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Site</th>
+                        <th>Component</th>
+                        <th>Purpose</th>
+                        <th>Malfunction</th>
+                        <th>Repair Result</th>
+                        <th>Workers</th>
+
+                        <th class="text-end">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var visit in Model)
+                    {
+                        <tr>
+
+                            <td>
+
+                                <div>
+                                    @(visit.VisitDate.ToString("dd/MM/yyyy"))
+                                </div>
+
+                                <small class="text-muted">
+                                    @(visit.VisitDate.ToString("HH:mm"))
+                                </small>
+
+                            </td>
+
+
+                            <td>
+
+                                <strong>
+                                    @visit.SiteName
+                                </strong>
+
+                                <div class="text-muted small">
+                                    @visit.SiteId
+                                </div>
+
+                            </td>
+
+
+                            <td>
+
+                                <strong>
+                                    @visit.ComponentName
+                                </strong>
+
+                                <div class="text-muted small">
+                                    @visit.ComponentType
+                                </div>
+
+                            </td>
+
+
+                            <td>
+                                @visit.Purpose
+                            </td>
+
+
+                            <td>
+
+                                @if (string.IsNullOrWhiteSpace(
+                                    visit.MalfunctionType))
+                                {
+                                    <span class="badge bg-success-subtle text-success">
+                                        None
+                                    </span>
+                                }
+                                else
+                                {
+                                    @visit.MalfunctionType
+                                }
+
+                            </td>
+
+
+                            <td>
+
+                                @(string.IsNullOrWhiteSpace(
+                                    visit.RepairResult)
+                                    ? "—"
+                                    : visit.RepairResult)
+
+                            </td>
+
+
+                            <td>
+
+                                @if (visit.WorkerNames.Any())
+                                {
+                                    @string.Join(
+                                        ", ",
+                                        visit.WorkerNames)
+                                }
+                                else
+                                {
+                                    <span class="text-muted">
+                                        —
+                                    </span>
+                                }
+
+                            </td>
+
+
+                            <td class="text-end">
+
+                                <div class="d-inline-flex gap-2">
+
+                                    <!-- All roles allowed to view Visits -->
+                                    <a asp-action="Details"
+                                           asp-route-id="@visit.Id"
+                                           class="btn btn-sm btn-outline-secondary">
+                                        Details
+                                    </a>
+
+
+                                    <!-- Admin + Editor only -->
+                                    @if (canManageVisits)
+                                    {
+                                        <a asp-action="Edit"
+                                               asp-route-id="@visit.Id"
+                                               class="btn btn-sm btn-outline-secondary">
+                                            Edit
+                                        </a>
+                                    }
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+    }
+
+</div>

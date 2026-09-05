@@ -1,7 +1,16 @@
-﻿@model IEnumerable<CameraOperationsManagement.ViewModels.Workers.WorkerListItemViewModel>
+﻿@using CameraOperationsManagement.Models
+
+@model IEnumerable<CameraOperationsManagement.ViewModels.Workers.WorkerListItemViewModel>
 
 @{
     ViewData["Title"] = "Workers";
+
+    var canManageWorkers =
+        User.IsInRole(AppRoles.Admin) ||
+        User.IsInRole(AppRoles.InfrastructureManager);
+
+    var isAdmin =
+        User.IsInRole(AppRoles.Admin);
 }
 
 <div class="page-header">
@@ -16,7 +25,7 @@
         </p>
     </div>
 
-    @if (User.IsInRole("Admin"))
+    @if (canManageWorkers)
     {
         <a asp-action="Create"
                class="btn btn-primary">
@@ -93,7 +102,7 @@
 
                                 <div class="d-inline-flex gap-2">
 
-                                    <!-- Available to all roles -->
+                                    <!-- Admin + Infrastructure Manager + Editor -->
                                     <a asp-action="History"
                                            asp-route-id="@worker.Id"
                                            class="btn btn-sm btn-outline-secondary">
@@ -101,15 +110,20 @@
                                     </a>
 
 
-                                    @if (User.IsInRole("Admin"))
+                                    <!-- Admin + Infrastructure Manager -->
+                                    @if (canManageWorkers)
                                     {
                                         <a asp-action="Edit"
                                                asp-route-id="@worker.Id"
                                                class="btn btn-sm btn-outline-secondary">
                                             Edit
                                         </a>
+                                    }
 
 
+                                    <!-- Admin only -->
+                                    @if (isAdmin)
+                                    {
                                         <form asp-action="ToggleStatus"
                                               asp-route-id="@worker.Id"
                                               method="post">

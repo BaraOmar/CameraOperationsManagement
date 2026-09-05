@@ -1,7 +1,21 @@
-﻿@model IEnumerable<CameraOperationsManagement.ViewModels.Sites.SiteListItemViewModel>
+﻿@using CameraOperationsManagement.Models
+@model IEnumerable<CameraOperationsManagement.ViewModels.Sites.SiteListItemViewModel>
 
 @{
     ViewData["Title"] = "Sites";
+
+    var canManageInfrastructure =
+        User.IsInRole(AppRoles.Admin) ||
+        User.IsInRole(AppRoles.InfrastructureManager);
+
+    var canChangeStatus =
+        User.IsInRole(AppRoles.Admin);
+
+    var canViewStructure =
+        User.IsInRole(AppRoles.Admin) ||
+        User.IsInRole(AppRoles.InfrastructureManager) ||
+        User.IsInRole(AppRoles.Editor) ||
+        User.IsInRole(AppRoles.InfrastructureViewer);
 }
 
 <div class="page-header">
@@ -16,8 +30,7 @@
         </p>
     </div>
 
-    @if (User.IsInRole("Admin") ||
-         User.IsInRole("Editor"))
+    @if (canManageInfrastructure)
     {
         <a asp-action="Create"
                class="btn btn-primary">
@@ -34,6 +47,106 @@
         @TempData["SuccessMessage"]
     </div>
 }
+
+
+<form method="get"
+      asp-action="Index"
+      class="app-card mb-4">
+
+    <div class="app-card-body">
+
+        <div class="row g-3 align-items-end">
+
+            <!-- SEARCH -->
+            <div class="col-lg-5 col-md-6">
+
+                <label class="form-label">
+                    Search
+                </label>
+
+                <input type="text"
+                       name="search"
+                       value="@ViewBag.Search"
+                       class="form-control"
+                       placeholder="Site ID, name, location..." />
+
+            </div>
+
+
+            <!-- LOCATION -->
+            <div class="col-lg-3 col-md-6">
+
+                <label class="form-label">
+                    Location
+                </label>
+
+                <select name="location"
+                        asp-items="ViewBag.Locations"
+                        class="form-select">
+
+                    <option value="">
+                        All locations
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- STATUS -->
+            <div class="col-lg-2 col-md-6">
+
+                <label class="form-label">
+                    Status
+                </label>
+
+                <select name="status"
+                        class="form-select">
+
+                    <option value=""
+                            selected="@(ViewBag.Status == null)">
+                        All statuses
+                    </option>
+
+                    <option value="active"
+                            selected="@(ViewBag.Status == "active")">
+                        Active
+                    </option>
+
+                    <option value="inactive"
+                            selected="@(ViewBag.Status == "inactive")">
+                        Inactive
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- FILTER ACTIONS -->
+            <div class="col-lg-2 col-md-6">
+
+                <div class="d-flex gap-2">
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Apply
+                    </button>
+
+                    <a asp-action="Index"
+                           class="btn btn-outline-secondary">
+                        Clear
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</form>
 
 
 <div class="app-card">
@@ -56,6 +169,7 @@
                         <th>Site Name</th>
                         <th>Location</th>
                         <th>Status</th>
+
                         <th class="text-end">
                             Actions
                         </th>
@@ -114,7 +228,19 @@
 
                                 <div class="d-inline-flex gap-2">
 
-                                    <!-- Available to Admin, Editor and Viewer -->
+                                    <!--
+                                        Full infrastructure view.
+                                        Basic Viewer must not see
+                                        Recorders/Cameras/Switches.
+                                    -->
+                                    <a asp-action="Structure"
+                                           asp-route-id="@site.Id"
+                                           class="btn btn-sm btn-outline-secondary">
+                                        View
+                                    </a>
+
+
+                                    <!-- Available to all five roles -->
                                     <a asp-action="History"
                                            asp-route-id="@site.Id"
                                            class="btn btn-sm btn-outline-secondary">
@@ -122,8 +248,8 @@
                                     </a>
 
 
-                                    @if (User.IsInRole("Admin") ||
-                                         User.IsInRole("Editor"))
+                                    <!-- Admin + Infrastructure Manager -->
+                                    @if (canManageInfrastructure)
                                     {
                                         <a asp-action="Edit"
                                                asp-route-id="@site.Id"
@@ -133,7 +259,8 @@
                                     }
 
 
-                                    @if (User.IsInRole("Admin"))
+                                    <!-- Admin only -->
+                                    @if (canChangeStatus)
                                     {
                                         <form asp-action="ToggleStatus"
                                               asp-route-id="@site.Id"

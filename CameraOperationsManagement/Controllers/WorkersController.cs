@@ -1,5 +1,6 @@
 ﻿using CameraOperationsManagement.Data;
 using CameraOperationsManagement.Models;
+using CameraOperationsManagement.Models.Enums;
 using CameraOperationsManagement.ViewModels.Workers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CameraOperationsManagement.Controllers
 {
-    [Authorize(Roles = "Admin,Editor,Viewer")]
+    [Authorize(Policy = "CanViewWorkers")]
     public class WorkersController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -43,7 +44,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // GET: Workers/Create
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "CanManageWorkers")]
         [HttpGet]
         public IActionResult Create()
         {
@@ -52,7 +53,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // POST: Workers/Create
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "CanManageWorkers")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
@@ -83,7 +84,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // GET: Workers/Edit/5
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "CanManageWorkers")]
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
@@ -108,7 +109,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // POST: Workers/Edit/5
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "CanManageWorkers")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
@@ -147,7 +148,7 @@ namespace CameraOperationsManagement.Controllers
 
 
         // POST: Workers/ToggleStatus/5
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "CanChangeStatus")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleStatus(int id)
@@ -171,117 +172,93 @@ namespace CameraOperationsManagement.Controllers
 
             return RedirectToAction(nameof(Index));
         }
-        // GET: Workers/History/5
         [HttpGet]
         public async Task<IActionResult> History(int id)
         {
-            var worker = await _context.Workers
-                .AsNoTracking()
-                .Where(w => w.Id == id)
-                .Select(w => new WorkerHistoryViewModel
-                {
-                    WorkerId = w.Id,
-
-                    WorkerName =
-                        w.FirstName + " " +
-                        w.SecondName + " " +
-                        w.LastName,
-
-                    IsActive = w.IsActive,
-
-
-                    SiteVisits = _context.SiteVisitWorkers
-                        .Where(vw =>
-                            vw.WorkerId == w.Id)
-                        .OrderByDescending(vw =>
-                            vw.SiteVisit.VisitDate)
-                        .Select(vw =>
-                            new WorkerSiteVisitHistoryViewModel
-                            {
-                                VisitId =
-                                    vw.SiteVisitId,
-
-                                SiteId =
-                                    vw.SiteVisit.SiteId,
-
-                                SiteName =
-                                    vw.SiteVisit.Site.Name,
-
-                                VisitDate =
-                                    vw.SiteVisit.VisitDate,
-
-                                Purpose =
-                                    vw.SiteVisit.Purpose,
-
-                                Notes =
-                                    vw.SiteVisit.Notes
-                            })
-                        .ToList(),
-
-
-                    CameraVisits = _context.CameraVisitWorkers
-                        .Where(vw =>
-                            vw.WorkerId == w.Id)
-                        .OrderByDescending(vw =>
-                            vw.CameraVisit.VisitDate)
-                        .Select(vw =>
-                            new WorkerCameraVisitHistoryViewModel
-                            {
-                                VisitId =
-                                    vw.CameraVisitId,
-
-                                CameraId =
-                                    vw.CameraVisit.CameraId,
-
-                                CameraName =
-                                    vw.CameraVisit.Camera.Name,
-
-                                SiteName =
-                                    vw.CameraVisit
-                                        .Camera
-                                        .Recorder
-                                        .Site
-                                        .Name,
-
-                                RecorderName =
-                                    vw.CameraVisit
-                                        .Camera
-                                        .Recorder
-                                        .Name,
-
-                                VisitDate =
-                                    vw.CameraVisit.VisitDate,
-
-                                Purpose =
-                                    vw.CameraVisit.Purpose,
-
-                                MalfunctionType =
-                                    vw.CameraVisit.MalfunctionType,
-
-                                MalfunctionDescription =
-                                    vw.CameraVisit.MalfunctionDescription,
-
-                                RepairWorkPerformed =
-                                    vw.CameraVisit.RepairWorkPerformed,
-
-                                RepairResult =
-                                    vw.CameraVisit.RepairResult,
-
-                                Notes =
-                                    vw.CameraVisit.Notes
-                            })
-                        .ToList()
-                })
-                .FirstOrDefaultAsync();
-
+            var worker = await GetWorkerHistoryAsync(id);
 
             if (worker == null)
             {
                 return NotFound();
             }
 
-
             return View(worker);
+        }
+        private async Task<WorkerHistoryViewModel?>
+    GetWorkerHistoryAsync(int id)
+        {
+            return await _context.Workers
+                .AsNoTracking()
+                .Where(w => w.Id == id)
+                .Select(w => new WorkerHistoryViewModel
+                {
+                    WorkerId = w.Id,
+
+                    FirstName = w.FirstName,
+
+                    SecondName = w.SecondName,
+
+                    LastName = w.LastName,
+
+                    IsActive = w.IsActive,
+
+
+                    Visits = _context.Visits
+                        .Where(v =>
+                            v.VisitWorkers.Any(vw =>
+                                vw.WorkerId == w.Id))
+                        .OrderByDescending(v =>
+                            v.VisitDate)
+                        .Select(v =>
+                            new WorkerHistoryVisitViewModel
+                            {
+                                VisitId =
+                                    v.Id,
+
+                                VisitDate =
+                                    v.VisitDate,
+
+                                SiteId =
+                                    v.SiteId,
+
+                                SiteName =
+                                    v.Site.Name,
+
+                                ComponentType =
+                                    v.ComponentType,
+
+                                ComponentName =
+                                    v.ComponentType ==
+                                        VisitComponentType.Recorder
+                                        ? v.Recorder!.Name
+
+                                        : v.ComponentType ==
+                                          VisitComponentType.Switch
+                                            ? v.NetworkSwitch!.Name
+
+                                            : v.Camera!.Name,
+
+                                Purpose =
+                                    v.Purpose,
+
+                                MalfunctionType =
+                                    v.MalfunctionType,
+
+                                MalfunctionDescription =
+                                    v.MalfunctionDescription,
+
+                                RepairWorkPerformed =
+                                    v.RepairWorkPerformed,
+
+                                RepairResult =
+                                    v.RepairResult,
+
+                                Notes =
+                                    v.Notes
+                            })
+                        .ToList()
+                })
+                .FirstOrDefaultAsync();
         }
     }
 }

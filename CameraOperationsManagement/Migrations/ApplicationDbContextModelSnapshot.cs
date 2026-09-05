@@ -163,6 +163,9 @@ namespace CameraOperationsManagement.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int>("Environment")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("InstallationDate")
                         .HasColumnType("datetime2");
 
@@ -446,6 +449,90 @@ namespace CameraOperationsManagement.Migrations
                     b.HasIndex("WorkerId");
 
                     b.ToTable("SiteVisitWorkers");
+                });
+
+            modelBuilder.Entity("CameraOperationsManagement.Models.Visit", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CameraId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ComponentType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MalfunctionDescription")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("MalfunctionType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int?>("NetworkSwitchId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<int?>("RecorderId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RepairResult")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("RepairWorkPerformed")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("SiteId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("VisitDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CameraId");
+
+                    b.HasIndex("NetworkSwitchId");
+
+                    b.HasIndex("RecorderId");
+
+                    b.HasIndex("SiteId", "VisitDate");
+
+                    b.ToTable("Visits", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Visits_Component", "(\r\n    [ComponentType] = 1\r\n    AND [RecorderId] IS NOT NULL\r\n    AND [NetworkSwitchId] IS NULL\r\n    AND [CameraId] IS NULL\r\n)\r\nOR\r\n(\r\n    [ComponentType] = 2\r\n    AND [RecorderId] IS NULL\r\n    AND [NetworkSwitchId] IS NOT NULL\r\n    AND [CameraId] IS NULL\r\n)\r\nOR\r\n(\r\n    [ComponentType] = 3\r\n    AND [RecorderId] IS NULL\r\n    AND [NetworkSwitchId] IS NULL\r\n    AND [CameraId] IS NOT NULL\r\n)");
+                        });
+                });
+
+            modelBuilder.Entity("CameraOperationsManagement.Models.VisitWorker", b =>
+                {
+                    b.Property<int>("VisitId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("WorkerId")
+                        .HasColumnType("int");
+
+                    b.HasKey("VisitId", "WorkerId");
+
+                    b.HasIndex("WorkerId");
+
+                    b.ToTable("VisitWorkers");
                 });
 
             modelBuilder.Entity("CameraOperationsManagement.Models.Worker", b =>
@@ -734,6 +821,57 @@ namespace CameraOperationsManagement.Migrations
                     b.Navigation("Worker");
                 });
 
+            modelBuilder.Entity("CameraOperationsManagement.Models.Visit", b =>
+                {
+                    b.HasOne("CameraOperationsManagement.Models.Camera", "Camera")
+                        .WithMany()
+                        .HasForeignKey("CameraId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CameraOperationsManagement.Models.NetworkSwitch", "NetworkSwitch")
+                        .WithMany()
+                        .HasForeignKey("NetworkSwitchId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CameraOperationsManagement.Models.Recorder", "Recorder")
+                        .WithMany()
+                        .HasForeignKey("RecorderId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CameraOperationsManagement.Models.Site", "Site")
+                        .WithMany()
+                        .HasForeignKey("SiteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Camera");
+
+                    b.Navigation("NetworkSwitch");
+
+                    b.Navigation("Recorder");
+
+                    b.Navigation("Site");
+                });
+
+            modelBuilder.Entity("CameraOperationsManagement.Models.VisitWorker", b =>
+                {
+                    b.HasOne("CameraOperationsManagement.Models.Visit", "Visit")
+                        .WithMany("VisitWorkers")
+                        .HasForeignKey("VisitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CameraOperationsManagement.Models.Worker", "Worker")
+                        .WithMany()
+                        .HasForeignKey("WorkerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Visit");
+
+                    b.Navigation("Worker");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -798,6 +936,11 @@ namespace CameraOperationsManagement.Migrations
             modelBuilder.Entity("CameraOperationsManagement.Models.SiteVisit", b =>
                 {
                     b.Navigation("SiteVisitWorkers");
+                });
+
+            modelBuilder.Entity("CameraOperationsManagement.Models.Visit", b =>
+                {
+                    b.Navigation("VisitWorkers");
                 });
 #pragma warning restore 612, 618
         }

@@ -3,10 +3,11 @@ using CameraOperationsManagement.ViewModels.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace CameraOperationsManagement.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "CanManageUsers")]
     public class UsersController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
@@ -57,11 +58,10 @@ namespace CameraOperationsManagement.Controllers
         }
 
 
-        // GET: Users/Create
         [HttpGet]
         public IActionResult Create()
         {
-            ViewBag.Roles = AllowedRoles;
+            ViewBag.Roles = GetRoleOptions();
 
             return View(new CreateUserViewModel());
         }
@@ -73,23 +73,25 @@ namespace CameraOperationsManagement.Controllers
         public async Task<IActionResult> Create(
             CreateUserViewModel model)
         {
-            ViewBag.Roles = AllowedRoles;
-
-            if (!AllowedRoles.Contains(model.Role))
+            if (!AppRoles.All.Contains(model.Role))
             {
                 ModelState.AddModelError(
                     nameof(model.Role),
-                    "Invalid role.");
+                    "The selected role is invalid.");
             }
+
 
             if (!ModelState.IsValid)
             {
+                ViewBag.Roles = GetRoleOptions();
+
                 return View(model);
             }
 
+
             var existingUser =
                 await _userManager.FindByEmailAsync(
-                    model.Email);
+                    model.Email.Trim());
 
             if (existingUser != null)
             {
@@ -97,25 +99,38 @@ namespace CameraOperationsManagement.Controllers
                     nameof(model.Email),
                     "A user with this email already exists.");
 
+                ViewBag.Roles = GetRoleOptions();
+
                 return View(model);
             }
 
+
             var user = new ApplicationUser
             {
-                FirstName = model.FirstName.Trim(),
-                SecondName = model.SecondName.Trim(),
-                LastName = model.LastName.Trim(),
+                FirstName =
+                    model.FirstName.Trim(),
 
-                Email = model.Email.Trim(),
-                UserName = model.Email.Trim(),
+                SecondName =
+                    model.SecondName.Trim(),
+
+                LastName =
+                    model.LastName.Trim(),
+
+                Email =
+                    model.Email.Trim(),
+
+                UserName =
+                    model.Email.Trim(),
 
                 EmailConfirmed = true
             };
+
 
             var createResult =
                 await _userManager.CreateAsync(
                     user,
                     model.Password);
+
 
             if (!createResult.Succeeded)
             {
@@ -126,17 +141,20 @@ namespace CameraOperationsManagement.Controllers
                         error.Description);
                 }
 
+                ViewBag.Roles = GetRoleOptions();
+
                 return View(model);
             }
+
 
             var roleResult =
                 await _userManager.AddToRoleAsync(
                     user,
                     model.Role);
 
+
             if (!roleResult.Succeeded)
             {
-                // Prevent leaving a user without the selected role.
                 await _userManager.DeleteAsync(user);
 
                 foreach (var error in roleResult.Errors)
@@ -146,13 +164,51 @@ namespace CameraOperationsManagement.Controllers
                         error.Description);
                 }
 
+                ViewBag.Roles = GetRoleOptions();
+
                 return View(model);
             }
+
 
             TempData["SuccessMessage"] =
                 "User created successfully.";
 
             return RedirectToAction(nameof(Index));
+        }
+        private static List<SelectListItem> GetRoleOptions()
+        {
+            return new List<SelectListItem>
+    {
+        new()
+        {
+            Value = AppRoles.Admin,
+            Text = "Admin"
+        },
+
+        new()
+        {
+            Value = AppRoles.InfrastructureManager,
+            Text = "Infrastructure Manager"
+        },
+
+        new()
+        {
+            Value = AppRoles.Editor,
+            Text = "Editor"
+        },
+
+        new()
+        {
+            Value = AppRoles.InfrastructureViewer,
+            Text = "Infrastructure Viewer"
+        },
+
+        new()
+        {
+            Value = AppRoles.Viewer,
+            Text = "Viewer"
+        }
+    };
         }
     }
 }
