@@ -1,5 +1,8 @@
 ﻿@using CameraOperationsManagement.Models
-@model IEnumerable<CameraOperationsManagement.ViewModels.Sites.SiteListItemViewModel>
+@using CameraOperationsManagement.ViewModels.Common
+@using CameraOperationsManagement.ViewModels.Sites
+
+@model PagedResult<SiteListItemViewModel>
 
 @{
     ViewData["Title"] = "Sites";
@@ -10,12 +13,6 @@
 
     var canChangeStatus =
         User.IsInRole(AppRoles.Admin);
-
-    var canViewStructure =
-        User.IsInRole(AppRoles.Admin) ||
-        User.IsInRole(AppRoles.InfrastructureManager) ||
-        User.IsInRole(AppRoles.Editor) ||
-        User.IsInRole(AppRoles.InfrastructureViewer);
 }
 
 <div class="page-header">
@@ -49,7 +46,8 @@
 }
 
 
-<form method="get"
+<form id="siteFilterForm"
+      method="get"
       asp-action="Index"
       class="app-card mb-4">
 
@@ -57,7 +55,6 @@
 
         <div class="row g-3 align-items-end">
 
-            <!-- SEARCH -->
             <div class="col-lg-5 col-md-6">
 
                 <label class="form-label">
@@ -73,7 +70,6 @@
             </div>
 
 
-            <!-- LOCATION -->
             <div class="col-lg-3 col-md-6">
 
                 <label class="form-label">
@@ -93,7 +89,6 @@
             </div>
 
 
-            <!-- STATUS -->
             <div class="col-lg-2 col-md-6">
 
                 <label class="form-label">
@@ -123,7 +118,6 @@
             </div>
 
 
-            <!-- FILTER ACTIONS -->
             <div class="col-lg-2 col-md-6">
 
                 <div class="d-flex gap-2">
@@ -133,10 +127,11 @@
                         Apply
                     </button>
 
-                    <a asp-action="Index"
-                           class="btn btn-outline-secondary">
+                    <button type="button"
+                            id="clearSiteFilters"
+                            class="btn btn-outline-secondary">
                         Clear
-                    </a>
+                    </button>
 
                 </div>
 
@@ -149,153 +144,139 @@
 </form>
 
 
-<div class="app-card">
+<div id="siteListContainer">
 
-    @if (!Model.Any())
-    {
-        <div class="app-card-body text-center text-muted py-5">
-            No sites have been added yet.
-        </div>
-    }
-    else
-    {
-        <div class="table-responsive">
-
-            <table class="table">
-
-                <thead>
-                    <tr>
-                        <th>Site ID</th>
-                        <th>Site Name</th>
-                        <th>Location</th>
-                        <th>Status</th>
-
-                        <th class="text-end">
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
-
-                <tbody>
-
-                    @foreach (var site in Model)
-                    {
-                        <tr>
-
-                            <td>
-                                <strong>
-                                    @site.Id
-                                </strong>
-                            </td>
-
-
-                            <td>
-                                @site.Name
-                            </td>
-
-
-                            <td>
-                                @if (string.IsNullOrWhiteSpace(site.Location))
-                                {
-                                    <span class="text-muted">
-                                        —
-                                    </span>
-                                }
-                                else
-                                {
-                                    @site.Location
-                                }
-                            </td>
-
-
-                            <td>
-                                @if (site.IsActive)
-                                {
-                                    <span class="badge bg-success-subtle text-success">
-                                        Active
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary-subtle text-secondary">
-                                        Inactive
-                                    </span>
-                                }
-                            </td>
-
-
-                            <td class="text-end">
-
-                                <div class="d-inline-flex gap-2">
-
-                                    <!--
-                                        Full infrastructure view.
-                                        Basic Viewer must not see
-                                        Recorders/Cameras/Switches.
-                                    -->
-                                    <a asp-action="Structure"
-                                           asp-route-id="@site.Id"
-                                           class="btn btn-sm btn-outline-secondary">
-                                        View
-                                    </a>
-
-
-                                    <!-- Available to all five roles -->
-                                    <a asp-action="History"
-                                           asp-route-id="@site.Id"
-                                           class="btn btn-sm btn-outline-secondary">
-                                        History
-                                    </a>
-
-
-                                    <!-- Admin + Infrastructure Manager -->
-                                    @if (canManageInfrastructure)
-                                    {
-                                        <a asp-action="Edit"
-                                               asp-route-id="@site.Id"
-                                               class="btn btn-sm btn-outline-secondary">
-                                            Edit
-                                        </a>
-                                    }
-
-
-                                    <!-- Admin only -->
-                                    @if (canChangeStatus)
-                                    {
-                                        <form asp-action="ToggleStatus"
-                                              asp-route-id="@site.Id"
-                                              method="post">
-
-                                            @if (site.IsActive)
-                                            {
-                                                <button type="submit"
-                                                        class="btn btn-sm btn-outline-secondary">
-                                                    Deactivate
-                                                </button>
-                                            }
-                                            else
-                                            {
-                                                <button type="submit"
-                                                        class="btn btn-sm btn-outline-secondary">
-                                                    Activate
-                                                </button>
-                                            }
-
-                                        </form>
-                                    }
-
-                                </div>
-
-                            </td>
-
-                        </tr>
-                    }
-
-                </tbody>
-
-            </table>
-
-        </div>
-    }
+    <partial name="_SiteList"
+             model="Model" />
 
 </div>
+
+
+@section Scripts
+{
+    <script>
+        (() => {
+
+            const form =
+                document.getElementById("siteFilterForm");
+
+            const container =
+                document.getElementById("siteListContainer");
+
+            const clearButton =
+                document.getElementById("clearSiteFilters");
+
+
+            async function loadSites(url) {
+
+                try {
+
+                    const response =
+                        await fetch(url, {
+                            headers: {
+                                "X-Requested-With":
+                                    "XMLHttpRequest"
+                            }
+                        });
+
+
+                    if (!response.ok) {
+                        throw new Error(
+                            "Failed to load sites.");
+                    }
+
+
+                    const html =
+                        await response.text();
+
+
+                    container.innerHTML =
+                        html;
+
+
+                    window.history.pushState(
+                        {},
+                        "",
+                        url);
+
+                }
+                catch (error) {
+
+                    console.error(error);
+
+                }
+            }
+
+
+            form.addEventListener(
+                "submit",
+                function (event) {
+
+                    event.preventDefault();
+
+
+                    const formData =
+                        new FormData(form);
+
+
+                    formData.set(
+                        "page",
+                        "1");
+
+
+                    const query =
+                        new URLSearchParams(
+                            formData);
+
+
+                    const url =
+                        `${form.action}?${query.toString()}`;
+
+
+                    loadSites(url);
+                });
+
+
+            clearButton.addEventListener(
+                "click",
+                function () {
+
+                    form.reset();
+
+                    loadSites(form.action);
+                });
+
+
+            container.addEventListener(
+                "click",
+                function (event) {
+
+                    const link =
+                        event.target.closest(
+                            "a[data-page-link]");
+
+
+                    if (!link) {
+                        return;
+                    }
+
+
+                    event.preventDefault();
+
+
+                    loadSites(
+                        link.href);
+                });
+
+
+            window.addEventListener(
+                "popstate",
+                function () {
+
+                    window.location.reload();
+
+                });
+
+        })();
+    </script>
+}

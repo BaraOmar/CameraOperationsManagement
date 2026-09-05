@@ -1,6 +1,9 @@
 ﻿@using CameraOperationsManagement.Models
+@using CameraOperationsManagement.Models.Enums
+@using CameraOperationsManagement.ViewModels.Common
+@using CameraOperationsManagement.ViewModels.Visits
 
-@model IEnumerable<CameraOperationsManagement.ViewModels.Visits.VisitListItemViewModel>
+@model PagedResult<VisitListItemViewModel>
 
 @{
     ViewData["Title"] = "Visits";
@@ -22,7 +25,6 @@
         </p>
     </div>
 
-
     @if (canManageVisits)
     {
         <a asp-action="Create"
@@ -42,165 +44,279 @@
 }
 
 
-<div class="app-card">
+<form id="visitFilterForm"
+      method="get"
+      asp-action="Index"
+      class="app-card mb-4">
 
-    @if (!Model.Any())
-    {
-        <div class="app-card-body text-center text-muted py-5">
-            No visits have been recorded yet.
-        </div>
-    }
-    else
-    {
-        <div class="table-responsive">
+    <div class="app-card-body">
 
-            <table class="table">
+        <div class="row g-3 align-items-end">
 
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Site</th>
-                        <th>Component</th>
-                        <th>Purpose</th>
-                        <th>Malfunction</th>
-                        <th>Repair Result</th>
-                        <th>Workers</th>
+            <!-- SEARCH -->
+            <div class="col-xl-4 col-md-6">
 
-                        <th class="text-end">
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
+                <label class="form-label">
+                    Search
+                </label>
 
-                <tbody>
+                <input type="text"
+                       name="search"
+                       value="@ViewBag.Search"
+                       class="form-control"
+                       placeholder="Purpose, malfunction, repair, notes..." />
 
-                    @foreach (var visit in Model)
-                    {
-                        <tr>
-
-                            <td>
-
-                                <div>
-                                    @(visit.VisitDate.ToString("dd/MM/yyyy"))
-                                </div>
-
-                                <small class="text-muted">
-                                    @(visit.VisitDate.ToString("HH:mm"))
-                                </small>
-
-                            </td>
+            </div>
 
 
-                            <td>
+            <!-- SITE -->
+            <div class="col-xl-4 col-md-6">
 
-                                <strong>
-                                    @visit.SiteName
-                                </strong>
+                <label class="form-label">
+                    Site
+                </label>
 
-                                <div class="text-muted small">
-                                    @visit.SiteId
-                                </div>
+                <select name="siteId"
+                        asp-items="ViewBag.FilterSites"
+                        class="form-select">
 
-                            </td>
+                    <option value="">
+                        All sites
+                    </option>
 
+                </select>
 
-                            <td>
-
-                                <strong>
-                                    @visit.ComponentName
-                                </strong>
-
-                                <div class="text-muted small">
-                                    @visit.ComponentType
-                                </div>
-
-                            </td>
+            </div>
 
 
-                            <td>
-                                @visit.Purpose
-                            </td>
+            <!-- COMPONENT TYPE -->
+            <div class="col-xl-4 col-md-6">
+
+                <label class="form-label">
+                    Component Type
+                </label>
+
+                <select name="componentType"
+                        class="form-select">
+
+                    <option value="">
+                        All component types
+                    </option>
+
+                    <option value="@((int)VisitComponentType.Recorder)"
+                            selected="@(ViewBag.ComponentType?.ToString() == VisitComponentType.Recorder.ToString())">
+                        Recorder
+                    </option>
+
+                    <option value="@((int)VisitComponentType.Switch)"
+                            selected="@(ViewBag.ComponentType?.ToString() == VisitComponentType.Switch.ToString())">
+                        Switch
+                    </option>
+
+                    <option value="@((int)VisitComponentType.Camera)"
+                            selected="@(ViewBag.ComponentType?.ToString() == VisitComponentType.Camera.ToString())">
+                        Camera
+                    </option>
+
+                </select>
+
+            </div>
 
 
-                            <td>
+            <!-- WORKER -->
+            <div class="col-xl-4 col-md-6">
 
-                                @if (string.IsNullOrWhiteSpace(
-                                    visit.MalfunctionType))
-                                {
-                                    <span class="badge bg-success-subtle text-success">
-                                        None
-                                    </span>
-                                }
-                                else
-                                {
-                                    @visit.MalfunctionType
-                                }
+                <label class="form-label">
+                    Worker
+                </label>
 
-                            </td>
+                <select name="workerId"
+                        asp-items="ViewBag.FilterWorkers"
+                        class="form-select">
 
+                    <option value="">
+                        All workers
+                    </option>
 
-                            <td>
+                </select>
 
-                                @(string.IsNullOrWhiteSpace(
-                                    visit.RepairResult)
-                                    ? "—"
-                                    : visit.RepairResult)
-
-                            </td>
+            </div>
 
 
-                            <td>
+            <!-- FROM DATE -->
+            <div class="col-xl-3 col-md-6">
 
-                                @if (visit.WorkerNames.Any())
-                                {
-                                    @string.Join(
-                                        ", ",
-                                        visit.WorkerNames)
-                                }
-                                else
-                                {
-                                    <span class="text-muted">
-                                        —
-                                    </span>
-                                }
+                <label class="form-label">
+                    From Date
+                </label>
 
-                            </td>
+                <input type="date"
+                       name="fromDate"
+                       value="@ViewBag.FromDate"
+                       class="form-control" />
+
+            </div>
 
 
-                            <td class="text-end">
+            <!-- TO DATE -->
+            <div class="col-xl-3 col-md-6">
 
-                                <div class="d-inline-flex gap-2">
+                <label class="form-label">
+                    To Date
+                </label>
 
-                                    <!-- All roles allowed to view Visits -->
-                                    <a asp-action="Details"
-                                           asp-route-id="@visit.Id"
-                                           class="btn btn-sm btn-outline-secondary">
-                                        Details
-                                    </a>
+                <input type="date"
+                       name="toDate"
+                       value="@ViewBag.ToDate"
+                       class="form-control" />
+
+            </div>
 
 
-                                    <!-- Admin + Editor only -->
-                                    @if (canManageVisits)
-                                    {
-                                        <a asp-action="Edit"
-                                               asp-route-id="@visit.Id"
-                                               class="btn btn-sm btn-outline-secondary">
-                                            Edit
-                                        </a>
-                                    }
+            <!-- FILTER ACTIONS -->
+            <div class="col-xl-2 col-md-6">
 
-                                </div>
+                <div class="d-flex gap-2">
 
-                            </td>
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Apply
+                    </button>
 
-                        </tr>
-                    }
+                    <button type="button"
+                            id="clearVisitFilters"
+                            class="btn btn-outline-secondary">
+                        Clear
+                    </button>
 
-                </tbody>
+                </div>
 
-            </table>
+            </div>
 
         </div>
-    }
+
+    </div>
+
+</form>
+
+
+<div id="visitListContainer">
+
+    <partial name="_VisitList"
+             model="Model" />
 
 </div>
+
+
+@section Scripts
+{
+    <script>
+        (() => {
+
+            const form =
+                document.getElementById("visitFilterForm");
+
+            const container =
+                document.getElementById("visitListContainer");
+
+            const clearButton =
+                document.getElementById("clearVisitFilters");
+
+
+            async function loadVisits(url) {
+
+                try {
+
+                    const response =
+                        await fetch(url, {
+                            headers: {
+                                "X-Requested-With":
+                                    "XMLHttpRequest"
+                            }
+                        });
+
+                    if (!response.ok) {
+                        throw new Error(
+                            "Failed to load visits.");
+                    }
+
+                    const html =
+                        await response.text();
+
+                    container.innerHTML =
+                        html;
+
+                    window.history.pushState(
+                        {},
+                        "",
+                        url);
+                }
+                catch (error) {
+                    console.error(error);
+                }
+            }
+
+
+            form.addEventListener(
+                "submit",
+                function (event) {
+
+                    event.preventDefault();
+
+                    const formData =
+                        new FormData(form);
+
+                    formData.set(
+                        "page",
+                        "1");
+
+                    const query =
+                        new URLSearchParams(
+                            formData);
+
+                    const url =
+                        `${form.action}?${query.toString()}`;
+
+                    loadVisits(url);
+                });
+
+
+            clearButton.addEventListener(
+                "click",
+                function () {
+
+                    form.reset();
+
+                    loadVisits(
+                        form.action);
+                });
+
+
+            container.addEventListener(
+                "click",
+                function (event) {
+
+                    const link =
+                        event.target.closest(
+                            "a[data-page-link]");
+
+                    if (!link) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    loadVisits(
+                        link.href);
+                });
+
+
+            window.addEventListener(
+                "popstate",
+                function () {
+                    window.location.reload();
+                });
+
+        })();
+    </script>
+}

@@ -2,6 +2,7 @@
 using CameraOperationsManagement.Models;
 using CameraOperationsManagement.Services;
 using CameraOperationsManagement.ViewModels.Cameras;
+using CameraOperationsManagement.ViewModels.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -27,7 +28,6 @@ namespace CameraOperationsManagement.Controllers
         // =====================================================
         // INDEX
         // =====================================================
-
         [HttpGet]
         public async Task<IActionResult> Index(
             string? search,
@@ -35,8 +35,18 @@ namespace CameraOperationsManagement.Controllers
             int? recorderId,
             string? cameraType,
             int? switchId,
-            string? status)
+            string? status,
+            int page = 1)
         {
+            const int pageSize = 10;
+
+
+            if (page < 1)
+            {
+                page = 1;
+            }
+
+
             var query = BuildCameraFilterQuery(
                 search,
                 siteId,
@@ -46,8 +56,30 @@ namespace CameraOperationsManagement.Controllers
                 status);
 
 
+            // Total filtered cameras
+            var totalItems =
+                await query.CountAsync();
+
+
+            var totalPages =
+                (int)Math.Ceiling(
+                    totalItems / (double)pageSize);
+
+
+            // If the requested page no longer exists,
+            // move to the last available page.
+            if (totalPages > 0 &&
+                page > totalPages)
+            {
+                page = totalPages;
+            }
+
+
+            // Only retrieve the cameras for the current page.
             var cameras = await query
                 .OrderBy(c => c.Name)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(c =>
                     new CameraListItemViewModel
                     {
@@ -88,6 +120,37 @@ namespace CameraOperationsManagement.Controllers
                 .ToListAsync();
 
 
+            var model =
+                new PagedResult<CameraListItemViewModel>
+                {
+                    Items = cameras,
+
+                    Page = page,
+
+                    PageSize = pageSize,
+
+                    TotalItems = totalItems
+                };
+
+
+            ViewBag.Search = search;
+
+            ViewBag.Status = status;
+
+
+            // AJAX:
+            // return only the camera table + pagination.
+            if (Request.Headers["X-Requested-With"] ==
+                "XMLHttpRequest")
+            {
+                return PartialView(
+                    "_CameraList",
+                    model);
+            }
+
+
+            // These dropdowns are only required
+            // when rendering the complete page.
             await LoadIndexFiltersAsync(
                 siteId,
                 recorderId,
@@ -95,11 +158,7 @@ namespace CameraOperationsManagement.Controllers
                 switchId);
 
 
-            ViewBag.Search = search;
-            ViewBag.Status = status;
-
-
-            return View(cameras);
+            return View(model);
         }
 
 

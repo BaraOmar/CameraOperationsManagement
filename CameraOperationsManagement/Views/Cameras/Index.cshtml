@@ -1,6 +1,8 @@
 ﻿@using CameraOperationsManagement.Models
+@using CameraOperationsManagement.ViewModels.Common
+@using CameraOperationsManagement.ViewModels.Cameras
 
-@model IEnumerable<CameraOperationsManagement.ViewModels.Cameras.CameraListItemViewModel>
+@model PagedResult<CameraListItemViewModel>
 
 @{
     ViewData["Title"] = "Cameras";
@@ -28,21 +30,14 @@
 
     <div class="d-flex gap-2">
 
-        <!-- Available to all roles that can access Cameras -->
         <a asp-action="ExportPdf"
-               asp-route-search="@ViewBag.Search"
-               asp-route-siteId="@Context.Request.Query["siteId"]"
-               asp-route-recorderId="@Context.Request.Query["recorderId"]"
-               asp-route-cameraType="@Context.Request.Query["cameraType"]"
-               asp-route-switchId="@Context.Request.Query["switchId"]"
-               asp-route-status="@ViewBag.Status"
+               id="cameraPdfLink"
                target="_blank"
                class="btn btn-outline-secondary">
             View PDF
         </a>
 
 
-        <!-- Admin + Infrastructure Manager -->
         @if (canManageInfrastructure)
         {
             <a asp-action="Create"
@@ -64,7 +59,8 @@
 }
 
 
-<form method="get"
+<form id="cameraFilterForm"
+      method="get"
       asp-action="Index"
       class="app-card mb-4">
 
@@ -73,7 +69,6 @@
         <div class="row g-3 align-items-end">
 
 
-            <!-- SEARCH -->
             <div class="col-xl-4 col-md-6">
 
                 <label class="form-label">
@@ -89,7 +84,6 @@
             </div>
 
 
-            <!-- SITE -->
             <div class="col-xl-4 col-md-6">
 
                 <label class="form-label">
@@ -109,7 +103,6 @@
             </div>
 
 
-            <!-- RECORDER -->
             <div class="col-xl-4 col-md-6">
 
                 <label class="form-label">
@@ -129,7 +122,6 @@
             </div>
 
 
-            <!-- TYPE -->
             <div class="col-xl-3 col-md-6">
 
                 <label class="form-label">
@@ -149,7 +141,6 @@
             </div>
 
 
-            <!-- SWITCH -->
             <div class="col-xl-3 col-md-6">
 
                 <label class="form-label">
@@ -169,7 +160,6 @@
             </div>
 
 
-            <!-- STATUS -->
             <div class="col-xl-3 col-md-6">
 
                 <label class="form-label">
@@ -199,7 +189,6 @@
             </div>
 
 
-            <!-- FILTER ACTIONS -->
             <div class="col-xl-3 col-md-6">
 
                 <div class="d-flex gap-2">
@@ -209,10 +198,11 @@
                         Apply Filters
                     </button>
 
-                    <a asp-action="Index"
-                           class="btn btn-outline-secondary">
+                    <button type="button"
+                            id="clearCameraFilters"
+                            class="btn btn-outline-secondary">
                         Clear
-                    </a>
+                    </button>
 
                 </div>
 
@@ -225,233 +215,160 @@
 </form>
 
 
-<div class="app-card">
+<div id="cameraListContainer">
 
-    @if (!Model.Any())
-    {
-        <div class="app-card-body text-center text-muted py-5">
-            No cameras have been added yet.
-        </div>
-    }
-    else
-    {
-        <div class="table-responsive">
-
-            <table class="table">
-
-                <thead>
-                    <tr>
-                        <th>Camera</th>
-                        <th>Site</th>
-                        <th>Recorder</th>
-                        <th>Type</th>
-                        <th>Environment</th>
-                        <th>IP Address</th>
-                        <th>Location</th>
-                        <th>Switch</th>
-                        <th>Status</th>
-
-                        <th class="text-end">
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
-
-
-                <tbody>
-
-                    @foreach (var camera in Model)
-                    {
-                        <tr>
-
-                            <td>
-
-                                <strong>
-                                    @camera.Name
-                                </strong>
-
-                                @if (!string.IsNullOrWhiteSpace(camera.Brand) ||
-                                     !string.IsNullOrWhiteSpace(camera.Model))
-                                {
-                                    <div class="text-muted small">
-                                        @camera.Brand @camera.Model
-                                    </div>
-                                }
-
-                            </td>
-
-
-                            <td>
-
-                                <div>
-                                    @camera.SiteName
-                                </div>
-
-                                <small class="text-muted">
-                                    @camera.SiteId
-                                </small>
-
-                            </td>
-
-
-                            <td>
-                                @camera.RecorderName
-                            </td>
-
-
-                            <td>
-
-                                @if (string.IsNullOrWhiteSpace(camera.Type))
-                                {
-                                    <span class="text-muted">
-                                        —
-                                    </span>
-                                }
-                                else
-                                {
-                                    @camera.Type
-                                }
-
-                            </td>
-
-
-                            <td>
-
-                                @if (camera.Environment ==
-                                     CameraOperationsManagement.Models.Enums
-                                         .CameraEnvironment.Internal)
-                                {
-                                    <span class="badge
-                                        bg-secondary-subtle
-                                        text-secondary">
-                                        Internal
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="badge
-                                        bg-info-subtle
-                                        text-info-emphasis">
-                                        External
-                                    </span>
-                                }
-
-                            </td>
-
-
-                            <td>
-
-                                @if (string.IsNullOrWhiteSpace(
-                                    camera.IpAddress))
-                                {
-                                    <span class="text-muted">
-                                        —
-                                    </span>
-                                }
-                                else
-                                {
-                                    @camera.IpAddress
-                                }
-
-                            </td>
-
-
-                            <td>
-                                @camera.InstallationLocation
-                            </td>
-
-
-                            <td>
-
-                                @if (string.IsNullOrWhiteSpace(
-                                    camera.NetworkSwitchName))
-                                {
-                                    <span class="text-muted">
-                                        —
-                                    </span>
-                                }
-                                else
-                                {
-                                    @camera.NetworkSwitchName
-                                }
-
-                            </td>
-
-
-                            <td>
-
-                                @if (camera.IsActive)
-                                {
-                                    <span class="badge
-                                        bg-success-subtle
-                                        text-success">
-                                        Active
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="badge
-                                        bg-secondary-subtle
-                                        text-secondary">
-                                        Inactive
-                                    </span>
-                                }
-
-                            </td>
-
-
-                            <td class="text-end">
-
-                                <div class="d-inline-flex gap-2">
-
-                                    <!-- All roles with Camera access -->
-                                    <a asp-action="History"
-                                           asp-route-id="@camera.Id"
-                                           class="btn btn-sm btn-outline-secondary">
-                                        History
-                                    </a>
-
-
-                                    <!-- Admin + Infrastructure Manager -->
-                                    @if (canManageInfrastructure)
-                                    {
-                                        <a asp-action="Edit"
-                                               asp-route-id="@camera.Id"
-                                               class="btn btn-sm btn-outline-secondary">
-                                            Edit
-                                        </a>
-                                    }
-
-
-                                    <!-- Admin only -->
-                                    @if (isAdmin)
-                                    {
-                                        <form asp-action="ToggleStatus"
-                                              asp-route-id="@camera.Id"
-                                              method="post">
-
-                                            <button type="submit"
-                                                    class="btn btn-sm btn-outline-secondary">
-                                                @(camera.IsActive
-                                                    ? "Deactivate"
-                                                    : "Activate")
-                                            </button>
-
-                                        </form>
-                                    }
-
-                                </div>
-
-                            </td>
-
-                        </tr>
-                    }
-
-                </tbody>
-
-            </table>
-
-        </div>
-    }
+    <partial name="_CameraList"
+             model="Model" />
 
 </div>
+
+
+@section Scripts
+{
+    <script>
+        (() => {
+
+            const form =
+                document.getElementById("cameraFilterForm");
+
+            const container =
+                document.getElementById("cameraListContainer");
+
+            const clearButton =
+                document.getElementById("clearCameraFilters");
+
+                const pdfLink =
+        document.getElementById("cameraPdfLink");
+                function updatePdfLink() {
+
+            const formData =
+                new FormData(form);
+
+            // PDF should export all matching records,
+            // not only the current pagination page.
+            formData.delete("page");
+
+            const query =
+                new URLSearchParams(formData);
+
+            pdfLink.href =
+                `/Cameras/ExportPdf?${query.toString()}`;
+        }
+
+            async function loadCameras(url) {
+
+                try {
+
+                    const response =
+                        await fetch(url, {
+                            headers: {
+                                "X-Requested-With":
+                                    "XMLHttpRequest"
+                            }
+                        });
+
+
+                    if (!response.ok) {
+                        throw new Error(
+                            "Failed to load cameras.");
+                    }
+
+
+                    const html =
+                        await response.text();
+
+
+                    container.innerHTML =
+                        html;
+
+
+                    window.history.pushState(
+                        {},
+                        "",
+                        url);
+
+                }
+                catch (error) {
+
+                    console.error(error);
+
+                }
+            }
+
+
+            form.addEventListener(
+                "submit",
+                function (event) {
+
+                    event.preventDefault();
+
+
+                    const formData =
+                        new FormData(form);
+
+
+                    formData.set(
+                        "page",
+                        "1");
+
+
+                    const query =
+                        new URLSearchParams(
+                            formData);
+
+
+                    const url =
+                        `${form.action}?${query.toString()}`;
+
+                    updatePdfLink();
+
+                    loadCameras(url);
+                });
+
+
+        clearButton.addEventListener(
+            "click",
+            function () {
+
+                form.reset();
+
+                updatePdfLink();
+
+                loadCameras(
+                    form.action);
+            });
+
+
+            container.addEventListener(
+                "click",
+                function (event) {
+
+                    const link =
+                        event.target.closest(
+                            "a[data-page-link]");
+
+
+                    if (!link) {
+                        return;
+                    }
+
+
+                    event.preventDefault();
+
+
+                    loadCameras(
+                        link.href);
+                });
+
+
+            window.addEventListener(
+                "popstate",
+                function () {
+
+                    window.location.reload();
+
+                });
+                updatePdfLink();
+        })();
+    </script>
+}

@@ -5,6 +5,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using CameraOperationsManagement.Models.Enums;
+using CameraOperationsManagement.ViewModels.Common;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace CameraOperationsManagement.Controllers
 {
@@ -22,19 +25,121 @@ namespace CameraOperationsManagement.Controllers
 
         // GET: Recorders
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            string? search,
+            string? siteId,
+            RecorderType? type,
+            int? switchId,
+            string? storage,
+            string? status,
+            int page = 1)
         {
-            var recorders = await _context.Recorders
+            const int pageSize = 10;
+
+            if (page < 1)
+            {
+                page = 1;
+            }
+
+
+            var query = _context.Recorders
                 .AsNoTracking()
+                .AsQueryable();
+
+
+            // SEARCH
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.Trim();
+
+                query = query.Where(r =>
+                    r.Name.Contains(search));
+            }
+
+
+            // SITE
+            if (!string.IsNullOrWhiteSpace(siteId))
+            {
+                query = query.Where(r =>
+                    r.SiteId == siteId);
+            }
+
+
+            // RECORDER TYPE
+            if (type.HasValue)
+            {
+                query = query.Where(r =>
+                    r.Type == type.Value);
+            }
+
+
+            // SWITCH
+            if (switchId.HasValue)
+            {
+                query = query.Where(r =>
+                    r.NetworkSwitchId == switchId.Value);
+            }
+
+
+            // STORAGE
+            if (storage == "yes")
+            {
+                query = query.Where(r =>
+                    r.HasStorage);
+            }
+            else if (storage == "no")
+            {
+                query = query.Where(r =>
+                    !r.HasStorage);
+            }
+
+
+            // STATUS
+            if (status == "active")
+            {
+                query = query.Where(r =>
+                    r.IsActive);
+            }
+            else if (status == "inactive")
+            {
+                query = query.Where(r =>
+                    !r.IsActive);
+            }
+
+
+            // TOTAL FILTERED RECORDS
+            var totalItems =
+                await query.CountAsync();
+
+
+            var totalPages =
+                (int)Math.Ceiling(
+                    totalItems / (double)pageSize);
+
+
+            if (totalPages > 0 &&
+                page > totalPages)
+            {
+                page = totalPages;
+            }
+
+
+            // PAGINATED RECORDERS
+            var recorders = await query
                 .OrderBy(r => r.Site.Name)
                 .ThenBy(r => r.Name)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(r => new RecorderListItemViewModel
                 {
                     Id = r.Id,
+
                     Name = r.Name,
+
                     Type = r.Type,
 
                     SiteId = r.SiteId,
+
                     SiteName = r.Site.Name,
 
                     NetworkSwitchName =
@@ -53,7 +158,84 @@ namespace CameraOperationsManagement.Controllers
                 })
                 .ToListAsync();
 
-            return View(recorders);
+
+            var model =
+                new PagedResult<RecorderListItemViewModel>
+                {
+                    Items = recorders,
+
+                    Page = page,
+
+                    PageSize = pageSize,
+
+                    TotalItems = totalItems
+                };
+
+
+            // SITE FILTER OPTIONS
+            var sites = await _context.Sites
+                .AsNoTracking()
+                .OrderBy(s => s.Name)
+                .Select(s => new
+                {
+                    s.Id,
+                    s.Name
+                })
+                .ToListAsync();
+
+
+            ViewBag.FilterSites =
+                new SelectList(
+                    sites,
+                    "Id",
+                    "Name",
+                    siteId);
+
+
+            // SWITCH FILTER OPTIONS
+            var switches = await _context.NetworkSwitches
+                .AsNoTracking()
+                .OrderBy(s => s.Name)
+                .Select(s => new
+                {
+                    s.Id,
+                    s.Name
+                })
+                .ToListAsync();
+
+
+            ViewBag.FilterSwitches =
+                new SelectList(
+                    switches,
+                    "Id",
+                    "Name",
+                    switchId);
+
+
+            ViewBag.Search =
+                search;
+
+            ViewBag.Type =
+                type;
+
+            ViewBag.Storage =
+                storage;
+
+            ViewBag.Status =
+                status;
+
+
+            // AJAX REQUEST
+            if (Request.Headers["X-Requested-With"] ==
+                "XMLHttpRequest")
+            {
+                return PartialView(
+                    "_RecorderList",
+                    model);
+            }
+
+
+            return View(model);
         }
 
 

@@ -1,0 +1,338 @@
+﻿@using CameraOperationsManagement.Models
+@using CameraOperationsManagement.ViewModels.Common
+@using CameraOperationsManagement.ViewModels.Cameras
+
+@model PagedResult<CameraListItemViewModel>
+
+@{
+    var canManageInfrastructure =
+        User.IsInRole(AppRoles.Admin) ||
+        User.IsInRole(AppRoles.InfrastructureManager);
+
+    var isAdmin =
+        User.IsInRole(AppRoles.Admin);
+
+    var search =
+        Context.Request.Query["search"].ToString();
+
+    var siteId =
+        Context.Request.Query["siteId"].ToString();
+
+    var recorderId =
+        Context.Request.Query["recorderId"].ToString();
+
+    var cameraType =
+        Context.Request.Query["cameraType"].ToString();
+
+    var switchId =
+        Context.Request.Query["switchId"].ToString();
+
+    var status =
+        Context.Request.Query["status"].ToString();
+}
+
+
+<div class="app-card">
+
+    @if (!Model.Items.Any())
+    {
+        <div class="app-card-body text-center text-muted py-5">
+            No cameras were found.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+
+            <table class="table">
+
+                <thead>
+                    <tr>
+                        <th>Camera</th>
+                        <th>Site</th>
+                        <th>Recorder</th>
+                        <th>Type</th>
+                        <th>Environment</th>
+                        <th>IP Address</th>
+                        <th>Location</th>
+                        <th>Switch</th>
+                        <th>Status</th>
+
+                        <th class="text-end">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+
+
+                <tbody>
+
+                    @foreach (var camera in Model.Items)
+                    {
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    @camera.Name
+                                </strong>
+
+                                @if (!string.IsNullOrWhiteSpace(camera.Brand) ||
+                                     !string.IsNullOrWhiteSpace(camera.Model))
+                                {
+                                    <div class="text-muted small">
+                                        @camera.Brand @camera.Model
+                                    </div>
+                                }
+                            </td>
+
+
+                            <td>
+
+                                <div>
+                                    @camera.SiteName
+                                </div>
+
+                                <small class="text-muted">
+                                    @camera.SiteId
+                                </small>
+
+                            </td>
+
+
+                            <td>
+                                @camera.RecorderName
+                            </td>
+
+
+                            <td>
+                                @(string.IsNullOrWhiteSpace(camera.Type)
+                                    ? "—"
+                                    : camera.Type)
+                            </td>
+
+
+                            <td>
+
+                                @if (camera.Environment ==
+                                     CameraOperationsManagement.Models.Enums
+                                         .CameraEnvironment.Internal)
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary">
+                                        Internal
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-info-subtle text-info-emphasis">
+                                        External
+                                    </span>
+                                }
+
+                            </td>
+
+
+                            <td>
+                                @(string.IsNullOrWhiteSpace(camera.IpAddress)
+                                    ? "—"
+                                    : camera.IpAddress)
+                            </td>
+
+
+                            <td>
+                                @camera.InstallationLocation
+                            </td>
+
+
+                            <td>
+                                @(string.IsNullOrWhiteSpace(
+                                    camera.NetworkSwitchName)
+                                    ? "—"
+                                    : camera.NetworkSwitchName)
+                            </td>
+
+
+                            <td>
+                                @if (camera.IsActive)
+                                {
+                                    <span class="badge bg-success-subtle text-success">
+                                        Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary">
+                                        Inactive
+                                    </span>
+                                }
+                            </td>
+
+
+                            <td class="text-end">
+
+                                <div class="d-inline-flex gap-2">
+
+                                    <a asp-action="History"
+                                           asp-route-id="@camera.Id"
+                                           class="btn btn-sm btn-outline-secondary">
+                                        History
+                                    </a>
+
+
+                                    @if (canManageInfrastructure)
+                                    {
+                                        <a asp-action="Edit"
+                                               asp-route-id="@camera.Id"
+                                               class="btn btn-sm btn-outline-secondary">
+                                            Edit
+                                        </a>
+                                    }
+
+
+                                    @if (isAdmin)
+                                    {
+                                        <form asp-action="ToggleStatus"
+                                              asp-route-id="@camera.Id"
+                                              method="post">
+
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-outline-secondary">
+
+                                                @(camera.IsActive
+                                                    ? "Deactivate"
+                                                    : "Activate")
+
+                                            </button>
+
+                                        </form>
+                                    }
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+    }
+
+</div>
+
+
+@if (Model.TotalPages > 1)
+{
+    <div class="d-flex
+        justify-content-between
+        align-items-center
+        mt-3">
+
+        <div class="text-muted small">
+            Showing page
+            @Model.Page
+            of
+            @Model.TotalPages
+            —
+            @Model.TotalItems
+            total records
+        </div>
+
+
+        <nav aria-label="Camera pagination">
+
+            <ul class="pagination mb-0">
+
+                <li class="page-item
+                    @(Model.HasPreviousPage
+                                            ? ""
+                                            : "disabled")">
+
+                    @if (Model.HasPreviousPage)
+                    {
+                        <a class="page-link"
+                               data-page-link
+                               asp-action="Index"
+                               asp-route-search="@search"
+                               asp-route-siteId="@siteId"
+                               asp-route-recorderId="@recorderId"
+                               asp-route-cameraType="@cameraType"
+                               asp-route-switchId="@switchId"
+                               asp-route-status="@status"
+                               asp-route-page="@(Model.Page - 1)">
+                            Previous
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="page-link">
+                            Previous
+                        </span>
+                    }
+
+                </li>
+
+
+                @for (var i = 1;
+                      i <= Model.TotalPages;
+                      i++)
+                {
+                    <li class="page-item
+                        @(i == Model.Page
+                                                    ? "active"
+                                                    : "")">
+
+                        <a class="page-link"
+                               data-page-link
+                               asp-action="Index"
+                               asp-route-search="@search"
+                               asp-route-siteId="@siteId"
+                               asp-route-recorderId="@recorderId"
+                               asp-route-cameraType="@cameraType"
+                               asp-route-switchId="@switchId"
+                               asp-route-status="@status"
+                               asp-route-page="@i">
+                            @i
+                        </a>
+
+                    </li>
+                }
+
+
+                <li class="page-item
+                    @(Model.HasNextPage
+                                            ? ""
+                                            : "disabled")">
+
+                    @if (Model.HasNextPage)
+                    {
+                        <a class="page-link"
+                               data-page-link
+                               asp-action="Index"
+                               asp-route-search="@search"
+                               asp-route-siteId="@siteId"
+                               asp-route-recorderId="@recorderId"
+                               asp-route-cameraType="@cameraType"
+                               asp-route-switchId="@switchId"
+                               asp-route-status="@status"
+                               asp-route-page="@(Model.Page + 1)">
+                            Next
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="page-link">
+                            Next
+                        </span>
+                    }
+
+                </li>
+
+            </ul>
+
+        </nav>
+
+    </div>
+}

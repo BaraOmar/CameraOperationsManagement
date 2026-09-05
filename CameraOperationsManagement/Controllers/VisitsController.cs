@@ -1,6 +1,7 @@
 ﻿using CameraOperationsManagement.Data;
 using CameraOperationsManagement.Models;
 using CameraOperationsManagement.Models.Enums;
+using CameraOperationsManagement.ViewModels.Common;
 using CameraOperationsManagement.ViewModels.Visits;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -27,57 +28,236 @@ namespace CameraOperationsManagement.Controllers
         // =========================
         [Authorize(Policy = "CanViewVisits")]
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            string? search,
+            string? siteId,
+            VisitComponentType? componentType,
+            int? workerId,
+            DateTime? fromDate,
+            DateTime? toDate,
+            int page = 1)
         {
-            var visits = await _context.Visits
+            const int pageSize = 10;
+
+            if (page < 1)
+            {
+                page = 1;
+            }
+
+
+            var query = _context.Visits
                 .AsNoTracking()
-                .OrderByDescending(v => v.VisitDate)
-                .Select(v => new VisitListItemViewModel
+                .AsQueryable();
+
+
+            // SEARCH
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.Trim();
+
+                query = query.Where(v =>
+                    v.Purpose.Contains(search) ||
+                    (v.MalfunctionType != null &&
+                     v.MalfunctionType.Contains(search)) ||
+                    (v.RepairResult != null &&
+                     v.RepairResult.Contains(search)) ||
+                    (v.Notes != null &&
+                     v.Notes.Contains(search)));
+            }
+
+
+            // SITE
+            if (!string.IsNullOrWhiteSpace(siteId))
+            {
+                query = query.Where(v =>
+                    v.SiteId == siteId);
+            }
+
+
+            // COMPONENT TYPE
+            if (componentType.HasValue)
+            {
+                query = query.Where(v =>
+                    v.ComponentType == componentType.Value);
+            }
+
+
+            // WORKER
+            if (workerId.HasValue)
+            {
+                query = query.Where(v =>
+                    v.VisitWorkers.Any(vw =>
+                        vw.WorkerId == workerId.Value));
+            }
+
+
+            // FROM DATE
+            if (fromDate.HasValue)
+            {
+                var start =
+                    fromDate.Value.Date;
+
+                query = query.Where(v =>
+                    v.VisitDate >= start);
+            }
+
+
+            // TO DATE
+            if (toDate.HasValue)
+            {
+                var endExclusive =
+                    toDate.Value.Date.AddDays(1);
+
+                query = query.Where(v =>
+                    v.VisitDate < endExclusive);
+            }
+
+
+            var totalItems =
+                await query.CountAsync();
+
+
+            var totalPages =
+                (int)Math.Ceiling(
+                    totalItems / (double)pageSize);
+
+
+            if (totalPages > 0 &&
+                page > totalPages)
+            {
+                page = totalPages;
+            }
+
+
+            var visits = await query
+                .OrderByDescending(v =>
+                    v.VisitDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(v =>
+                    new VisitListItemViewModel
+                    {
+                        Id = v.Id,
+
+                        VisitDate = v.VisitDate,
+
+                        SiteId = v.SiteId,
+
+                        SiteName = v.Site.Name,
+
+                        ComponentType =
+                            v.ComponentType.ToString(),
+
+                        ComponentName =
+                            v.ComponentType ==
+                                VisitComponentType.Recorder
+                                ? v.Recorder!.Name
+
+                                : v.ComponentType ==
+                                  VisitComponentType.Switch
+                                    ? v.NetworkSwitch!.Name
+
+                                    : v.Camera!.Name,
+
+                        Purpose = v.Purpose,
+
+                        MalfunctionType =
+                            v.MalfunctionType,
+
+                        RepairResult =
+                            v.RepairResult,
+
+                        WorkerNames =
+                            v.VisitWorkers
+                                .OrderBy(vw =>
+                                    vw.Worker.FirstName)
+                                .ThenBy(vw =>
+                                    vw.Worker.SecondName)
+                                .ThenBy(vw =>
+                                    vw.Worker.LastName)
+                                .Select(vw =>
+                                    vw.Worker.FirstName + " " +
+                                    vw.Worker.SecondName + " " +
+                                    vw.Worker.LastName)
+                                .ToList()
+                    })
+                .ToListAsync();
+
+
+            var model =
+                new PagedResult<VisitListItemViewModel>
                 {
-                    Id = v.Id,
+                    Items = visits,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalItems = totalItems
+                };
 
-                    VisitDate = v.VisitDate,
 
-                    SiteId = v.SiteId,
-
-                    SiteName = v.Site.Name,
-
-                    ComponentType =
-                        v.ComponentType.ToString(),
-
-                    ComponentName =
-                        v.ComponentType == VisitComponentType.Recorder
-                            ? v.Recorder!.Name
-                            : v.ComponentType == VisitComponentType.Switch
-                                ? v.NetworkSwitch!.Name
-                                : v.Camera!.Name,
-
-                    Purpose = v.Purpose,
-
-                    MalfunctionType =
-                        v.MalfunctionType,
-
-                    RepairResult =
-                        v.RepairResult,
-
-                    WorkerNames =
-                        v.VisitWorkers
-                            .OrderBy(vw =>
-                                vw.Worker.FirstName)
-                            .ThenBy(vw =>
-                                vw.Worker.SecondName)
-                            .ThenBy(vw =>
-                                vw.Worker.LastName)
-                            .Select(vw =>
-                                vw.Worker.FirstName + " " +
-                                vw.Worker.SecondName + " " +
-                                vw.Worker.LastName)
-                            .ToList()
+            // SITE FILTER OPTIONS
+            var sites = await _context.Sites
+                .AsNoTracking()
+                .OrderBy(s => s.Name)
+                .Select(s => new
+                {
+                    s.Id,
+                    s.Name
                 })
                 .ToListAsync();
 
 
-            return View(visits);
+            ViewBag.FilterSites =
+                new SelectList(
+                    sites,
+                    "Id",
+                    "Name",
+                    siteId);
+
+
+            // WORKER FILTER OPTIONS
+            var workers = await _context.Workers
+                .AsNoTracking()
+                .OrderBy(w => w.FirstName)
+                .ThenBy(w => w.SecondName)
+                .ThenBy(w => w.LastName)
+                .Select(w => new
+                {
+                    w.Id,
+
+                    Name =
+                        w.FirstName + " " +
+                        w.SecondName + " " +
+                        w.LastName
+                })
+                .ToListAsync();
+
+
+            ViewBag.FilterWorkers =
+                new SelectList(
+                    workers,
+                    "Id",
+                    "Name",
+                    workerId);
+
+
+            ViewBag.Search = search;
+            ViewBag.ComponentType = componentType;
+            ViewBag.FromDate =
+                fromDate?.ToString("yyyy-MM-dd");
+            ViewBag.ToDate =
+                toDate?.ToString("yyyy-MM-dd");
+
+
+            if (Request.Headers["X-Requested-With"] ==
+                "XMLHttpRequest")
+            {
+                return PartialView(
+                    "_VisitList",
+                    model);
+            }
+
+
+            return View(model);
         }
 
 

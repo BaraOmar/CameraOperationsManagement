@@ -44,120 +44,179 @@
 }
 
 
-<div class="app-card">
+<form id="workerFilterForm"
+      method="get"
+      asp-action="Index"
+      class="app-card mb-4">
 
-    @if (!Model.Any())
-    {
-        <div class="app-card-body text-center text-muted py-5">
-            No workers have been added yet.
-        </div>
-    }
-    else
-    {
-        <div class="table-responsive">
+    <div class="app-card-body">
 
-            <table class="table">
+        <div class="row g-3 align-items-end">
 
-                <thead>
-                    <tr>
-                        <th>Worker</th>
-                        <th>Status</th>
+            <div class="col-md-6">
 
-                        <th class="text-end">
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
+                <label class="form-label">
+                    Search
+                </label>
 
-                <tbody>
+                <input type="text"
+                       name="search"
+                       value="@ViewBag.Search"
+                       class="form-control"
+                       placeholder="Worker name..." />
 
-                    @foreach (var worker in Model)
-                    {
-                        <tr>
-
-                            <td>
-                                <strong>
-                                    @worker.FullName
-                                </strong>
-                            </td>
+            </div>
 
 
-                            <td>
-                                @if (worker.IsActive)
-                                {
-                                    <span class="badge bg-success-subtle text-success">
-                                        Active
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary-subtle text-secondary">
-                                        Inactive
-                                    </span>
-                                }
-                            </td>
+            <div class="col-md-3">
+
+                <label class="form-label">
+                    Status
+                </label>
+
+                <select name="status"
+                        class="form-select">
+
+                    <option value=""
+                            selected="@(ViewBag.Status == null)">
+                        All statuses
+                    </option>
+
+                    <option value="active"
+                            selected="@(ViewBag.Status == "active")">
+                        Active
+                    </option>
+
+                    <option value="inactive"
+                            selected="@(ViewBag.Status == "inactive")">
+                        Inactive
+                    </option>
+
+                </select>
+
+            </div>
 
 
-                            <td class="text-end">
+            <div class="col-md-3">
 
-                                <div class="d-inline-flex gap-2">
+                <div class="d-flex gap-2">
 
-                                    <!-- Admin + Infrastructure Manager + Editor -->
-                                    <a asp-action="History"
-                                           asp-route-id="@worker.Id"
-                                           class="btn btn-sm btn-outline-secondary">
-                                        History
-                                    </a>
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Apply
+                    </button>
 
+                    <button type="button"
+                            id="clearWorkerFilters"
+                            class="btn btn-outline-secondary">
+                        Clear
+                    </button>
 
-                                    <!-- Admin + Infrastructure Manager -->
-                                    @if (canManageWorkers)
-                                    {
-                                        <a asp-action="Edit"
-                                               asp-route-id="@worker.Id"
-                                               class="btn btn-sm btn-outline-secondary">
-                                            Edit
-                                        </a>
-                                    }
+                </div>
 
-
-                                    <!-- Admin only -->
-                                    @if (isAdmin)
-                                    {
-                                        <form asp-action="ToggleStatus"
-                                              asp-route-id="@worker.Id"
-                                              method="post">
-
-                                            @if (worker.IsActive)
-                                            {
-                                                <button type="submit"
-                                                        class="btn btn-sm btn-outline-secondary">
-                                                    Deactivate
-                                                </button>
-                                            }
-                                            else
-                                            {
-                                                <button type="submit"
-                                                        class="btn btn-sm btn-outline-secondary">
-                                                    Activate
-                                                </button>
-                                            }
-
-                                        </form>
-                                    }
-
-                                </div>
-
-                            </td>
-
-                        </tr>
-                    }
-
-                </tbody>
-
-            </table>
+            </div>
 
         </div>
-    }
+
+    </div>
+
+</form>
+
+
+<div id="workerListContainer">
+
+    <partial name="_WorkerList"
+             model="Model" />
 
 </div>
+
+
+@section Scripts
+{
+    <script>
+        (() => {
+
+            const form =
+                document.getElementById("workerFilterForm");
+
+            const container =
+                document.getElementById("workerListContainer");
+
+            const clearButton =
+                document.getElementById("clearWorkerFilters");
+
+
+            async function loadWorkers(url) {
+
+                try {
+
+                    const response =
+                        await fetch(url, {
+                            headers: {
+                                "X-Requested-With":
+                                    "XMLHttpRequest"
+                            }
+                        });
+
+                    if (!response.ok) {
+                        throw new Error(
+                            "Failed to load workers.");
+                    }
+
+                    const html =
+                        await response.text();
+
+                    container.innerHTML =
+                        html;
+
+                    window.history.pushState(
+                        {},
+                        "",
+                        url);
+                }
+                catch (error) {
+                    console.error(error);
+                }
+            }
+
+
+            form.addEventListener(
+                "submit",
+                function (event) {
+
+                    event.preventDefault();
+
+                    const formData =
+                        new FormData(form);
+
+                    const query =
+                        new URLSearchParams(
+                            formData);
+
+                    const url =
+                        `${form.action}?${query.toString()}`;
+
+                    loadWorkers(url);
+                });
+
+
+            clearButton.addEventListener(
+                "click",
+                function () {
+
+                    form.reset();
+
+                    loadWorkers(
+                        form.action);
+                });
+
+
+            window.addEventListener(
+                "popstate",
+                function () {
+                    window.location.reload();
+                });
+
+        })();
+    </script>
+}

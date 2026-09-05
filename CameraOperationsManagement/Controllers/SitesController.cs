@@ -2,6 +2,7 @@
 using CameraOperationsManagement.Models;
 using CameraOperationsManagement.Models.Enums;
 using CameraOperationsManagement.Services;
+using CameraOperationsManagement.ViewModels.Common;
 using CameraOperationsManagement.ViewModels.Sites;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -26,12 +27,22 @@ namespace CameraOperationsManagement.Controllers
 
 
         // GET: Sites
+        // GET: Sites
         [HttpGet]
         public async Task<IActionResult> Index(
             string? search,
             string? location,
-            string? status)
+            string? status,
+            int page = 1)
         {
+            const int pageSize = 10;
+
+            if (page < 1)
+            {
+                page = 1;
+            }
+
+
             var query = _context.Sites
                 .AsNoTracking()
                 .AsQueryable();
@@ -71,8 +82,29 @@ namespace CameraOperationsManagement.Controllers
             }
 
 
+            // TOTAL NUMBER OF FILTERED RECORDS
+            var totalItems =
+                await query.CountAsync();
+
+
+            var totalPages =
+                (int)Math.Ceiling(
+                    totalItems / (double)pageSize);
+
+
+            // Prevent requesting a page that no longer exists
+            if (totalPages > 0 &&
+                page > totalPages)
+            {
+                page = totalPages;
+            }
+
+
+            // PAGINATED DATA
             var sites = await query
                 .OrderBy(s => s.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(s =>
                     new SiteListItemViewModel
                     {
@@ -85,6 +117,19 @@ namespace CameraOperationsManagement.Controllers
                         IsActive = s.IsActive
                     })
                 .ToListAsync();
+
+
+            var model =
+                new PagedResult<SiteListItemViewModel>
+                {
+                    Items = sites,
+
+                    Page = page,
+
+                    PageSize = pageSize,
+
+                    TotalItems = totalItems
+                };
 
 
             // LOCATION FILTER OPTIONS
@@ -105,14 +150,27 @@ namespace CameraOperationsManagement.Controllers
                     location);
 
 
-            ViewBag.Search =
-                search;
+            ViewBag.Search = search;
 
-            ViewBag.Status =
-                status;
+            ViewBag.Location = location;
+
+            ViewBag.Status = status;
 
 
-            return View(sites);
+            // AJAX request:
+            // return only the table + pagination
+            if (Request.Headers["X-Requested-With"] ==
+                "XMLHttpRequest")
+            {
+                return PartialView(
+                    "_SiteList",
+                    model);
+            }
+
+
+            // Normal request:
+            // return the whole page
+            return View(model);
         }
 
 

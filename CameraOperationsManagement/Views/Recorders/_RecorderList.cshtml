@@ -1,0 +1,304 @@
+﻿@using CameraOperationsManagement.Models
+@using CameraOperationsManagement.ViewModels.Common
+@using CameraOperationsManagement.ViewModels.Recorders
+
+@model PagedResult<RecorderListItemViewModel>
+
+@{
+    var canManageInfrastructure =
+        User.IsInRole(AppRoles.Admin) ||
+        User.IsInRole(AppRoles.InfrastructureManager);
+
+    var isAdmin =
+        User.IsInRole(AppRoles.Admin);
+
+    var search =
+        Context.Request.Query["search"].ToString();
+
+    var siteId =
+        Context.Request.Query["siteId"].ToString();
+
+    var type =
+        Context.Request.Query["type"].ToString();
+
+    var switchId =
+        Context.Request.Query["switchId"].ToString();
+
+    var storage =
+        Context.Request.Query["storage"].ToString();
+
+    var status =
+        Context.Request.Query["status"].ToString();
+}
+
+
+<div class="app-card">
+
+    @if (!Model.Items.Any())
+    {
+        <div class="app-card-body text-center text-muted py-5">
+            No recorders were found.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+
+            <table class="table">
+
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Site</th>
+                        <th>Switch</th>
+                        <th>Storage</th>
+                        <th>Status</th>
+                        <th class="text-end">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var recorder in Model.Items)
+                    {
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    @recorder.Name
+                                </strong>
+                            </td>
+
+                            <td>
+                                <span class="badge text-bg-secondary">
+                                    @recorder.Type
+                                </span>
+                            </td>
+
+                            <td>
+                                <div>
+                                    @recorder.SiteName
+                                </div>
+
+                                <small class="text-muted">
+                                    @recorder.SiteId
+                                </small>
+                            </td>
+
+                            <td>
+                                @(string.IsNullOrWhiteSpace(
+                                    recorder.NetworkSwitchName)
+                                    ? "—"
+                                    : recorder.NetworkSwitchName)
+                            </td>
+
+                            <td>
+                                @if (!recorder.HasStorage)
+                                {
+                                    <span class="text-muted">
+                                        No storage
+                                    </span>
+                                }
+                                else if (recorder.TotalStorageGb == 0)
+                                {
+                                    <span class="text-muted">
+                                        No HDDs added
+                                    </span>
+                                }
+                                else
+                                {
+                                    <strong>
+                                        @recorder.TotalStorageGb GB
+                                    </strong>
+                                }
+                            </td>
+
+                            <td>
+                                @if (recorder.IsActive)
+                                {
+                                    <span class="badge bg-success-subtle text-success">
+                                        Active
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary">
+                                        Inactive
+                                    </span>
+                                }
+                            </td>
+
+                            <td class="text-end">
+
+                                <div class="d-inline-flex gap-2">
+
+                                    @if (recorder.HasStorage)
+                                    {
+                                        <a asp-controller="RecorderHardDrives"
+                                               asp-action="Index"
+                                               asp-route-recorderId="@recorder.Id"
+                                               class="btn btn-sm btn-outline-secondary">
+                                            Storage
+                                        </a>
+                                    }
+
+                                    <a asp-action="History"
+                                           asp-route-id="@recorder.Id"
+                                           class="btn btn-sm btn-outline-secondary">
+                                        History
+                                    </a>
+
+                                    @if (canManageInfrastructure)
+                                    {
+                                        <a asp-action="Edit"
+                                               asp-route-id="@recorder.Id"
+                                               class="btn btn-sm btn-outline-secondary">
+                                            Edit
+                                        </a>
+                                    }
+
+                                    @if (isAdmin)
+                                    {
+                                        <form asp-action="ToggleStatus"
+                                              asp-route-id="@recorder.Id"
+                                              method="post">
+
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-outline-secondary">
+
+                                                @(recorder.IsActive
+                                                    ? "Deactivate"
+                                                    : "Activate")
+
+                                            </button>
+
+                                        </form>
+                                    }
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+    }
+
+</div>
+
+
+@if (Model.TotalPages > 1)
+{
+    <div class="d-flex
+        justify-content-between
+        align-items-center
+        mt-3">
+
+        <div class="text-muted small">
+            Showing page
+            @Model.Page
+            of
+            @Model.TotalPages
+            —
+            @Model.TotalItems
+            total records
+        </div>
+
+
+        <nav aria-label="Recorder pagination">
+
+            <ul class="pagination mb-0">
+
+                <li class="page-item
+                    @(Model.HasPreviousPage ? "" : "disabled")">
+
+                    @if (Model.HasPreviousPage)
+                    {
+                        <a class="page-link"
+                               data-page-link
+                               asp-action="Index"
+                               asp-route-search="@search"
+                               asp-route-siteId="@siteId"
+                               asp-route-type="@type"
+                               asp-route-switchId="@switchId"
+                               asp-route-storage="@storage"
+                               asp-route-status="@status"
+                               asp-route-page="@(Model.Page - 1)">
+                            Previous
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="page-link">
+                            Previous
+                        </span>
+                    }
+
+                </li>
+
+
+                @for (var i = 1;
+                      i <= Model.TotalPages;
+                      i++)
+                {
+                    <li class="page-item
+                        @(i == Model.Page ? "active" : "")">
+
+                        <a class="page-link"
+                               data-page-link
+                               asp-action="Index"
+                               asp-route-search="@search"
+                               asp-route-siteId="@siteId"
+                               asp-route-type="@type"
+                               asp-route-switchId="@switchId"
+                               asp-route-storage="@storage"
+                               asp-route-status="@status"
+                               asp-route-page="@i">
+                            @i
+                        </a>
+
+                    </li>
+                }
+
+
+                <li class="page-item
+                    @(Model.HasNextPage ? "" : "disabled")">
+
+                    @if (Model.HasNextPage)
+                    {
+                        <a class="page-link"
+                               data-page-link
+                               asp-action="Index"
+                               asp-route-search="@search"
+                               asp-route-siteId="@siteId"
+                               asp-route-type="@type"
+                               asp-route-switchId="@switchId"
+                               asp-route-storage="@storage"
+                               asp-route-status="@status"
+                               asp-route-page="@(Model.Page + 1)">
+                            Next
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="page-link">
+                            Next
+                        </span>
+                    }
+
+                </li>
+
+            </ul>
+
+        </nav>
+
+    </div>
+}

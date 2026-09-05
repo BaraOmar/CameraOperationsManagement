@@ -1,5 +1,6 @@
 ﻿using CameraOperationsManagement.Data;
 using CameraOperationsManagement.Models;
+using CameraOperationsManagement.ViewModels.Common;
 using CameraOperationsManagement.ViewModels.NetworkSwitches;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,24 +23,140 @@ namespace CameraOperationsManagement.Controllers
 
         // GET: NetworkSwitches
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            string? search,
+            string? siteId,
+            string? status,
+            int page = 1)
         {
-            var switches = await _context.NetworkSwitches
+            const int pageSize = 10;
+
+            if (page < 1)
+            {
+                page = 1;
+            }
+
+
+            var query = _context.NetworkSwitches
                 .AsNoTracking()
-                .Include(s => s.Site)
+                .AsQueryable();
+
+
+            // SEARCH
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.Trim();
+
+                query = query.Where(s =>
+                    s.Name.Contains(search));
+            }
+
+
+            // SITE
+            if (!string.IsNullOrWhiteSpace(siteId))
+            {
+                query = query.Where(s =>
+                    s.SiteId == siteId);
+            }
+
+
+            // STATUS
+            if (status == "active")
+            {
+                query = query.Where(s =>
+                    s.IsActive);
+            }
+            else if (status == "inactive")
+            {
+                query = query.Where(s =>
+                    !s.IsActive);
+            }
+
+
+            var totalItems =
+                await query.CountAsync();
+
+
+            var totalPages =
+                (int)Math.Ceiling(
+                    totalItems / (double)pageSize);
+
+
+            if (totalPages > 0 &&
+                page > totalPages)
+            {
+                page = totalPages;
+            }
+
+
+            var switches = await query
                 .OrderBy(s => s.Site.Name)
                 .ThenBy(s => s.Name)
-                .Select(s => new NetworkSwitchListItemViewModel
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(s =>
+                    new NetworkSwitchListItemViewModel
+                    {
+                        Id = s.Id,
+
+                        Name = s.Name,
+
+                        SiteId = s.SiteId,
+
+                        SiteName = s.Site.Name,
+
+                        IsActive = s.IsActive
+                    })
+                .ToListAsync();
+
+
+            var model =
+                new PagedResult<NetworkSwitchListItemViewModel>
                 {
-                    Id = s.Id,
-                    Name = s.Name,
-                    SiteId = s.SiteId,
-                    SiteName = s.Site.Name,
-                    IsActive = s.IsActive
+                    Items = switches,
+
+                    Page = page,
+
+                    PageSize = pageSize,
+
+                    TotalItems = totalItems
+                };
+
+
+            var sites = await _context.Sites
+                .AsNoTracking()
+                .OrderBy(s => s.Name)
+                .Select(s => new
+                {
+                    s.Id,
+                    s.Name
                 })
                 .ToListAsync();
 
-            return View(switches);
+
+            ViewBag.FilterSites =
+                new SelectList(
+                    sites,
+                    "Id",
+                    "Name",
+                    siteId);
+
+
+            ViewBag.Search = search;
+
+            ViewBag.Status = status;
+
+
+            if (Request.Headers["X-Requested-With"] ==
+                "XMLHttpRequest")
+            {
+                return PartialView(
+                    "_NetworkSwitchList",
+                    model);
+            }
+
+
+            return View(model);
         }
 
 

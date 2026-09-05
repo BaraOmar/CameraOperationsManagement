@@ -1,6 +1,8 @@
 ﻿@using CameraOperationsManagement.Models
+@using CameraOperationsManagement.ViewModels.Common
+@using CameraOperationsManagement.ViewModels.NetworkSwitches
 
-@model IEnumerable<CameraOperationsManagement.ViewModels.NetworkSwitches.NetworkSwitchListItemViewModel>
+@model PagedResult<NetworkSwitchListItemViewModel>
 
 @{
     ViewData["Title"] = "Network Switches";
@@ -44,132 +46,221 @@
 }
 
 
-<div class="app-card">
+<form id="switchFilterForm"
+      method="get"
+      asp-action="Index"
+      class="app-card mb-4">
 
-    @if (!Model.Any())
-    {
-        <div class="app-card-body text-center text-muted py-5">
-            No network switches have been added yet.
-        </div>
-    }
-    else
-    {
-        <div class="table-responsive">
+    <div class="app-card-body">
 
-            <table class="table">
+        <div class="row g-3 align-items-end">
 
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Site</th>
-                        <th>Status</th>
+            <div class="col-lg-4 col-md-6">
 
-                        <th class="text-end">
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
+                <label class="form-label">
+                    Search
+                </label>
 
-                <tbody>
+                <input type="text"
+                       name="search"
+                       value="@ViewBag.Search"
+                       class="form-control"
+                       placeholder="Switch name..." />
 
-                    @foreach (var item in Model)
-                    {
-                        <tr>
-
-                            <td>
-                                <strong>
-                                    @item.Name
-                                </strong>
-                            </td>
+            </div>
 
 
-                            <td>
-                                <div>
-                                    @item.SiteName
-                                </div>
+            <div class="col-lg-4 col-md-6">
 
-                                <small class="text-muted">
-                                    @item.SiteId
-                                </small>
-                            </td>
+                <label class="form-label">
+                    Site
+                </label>
 
+                <select name="siteId"
+                        asp-items="ViewBag.FilterSites"
+                        class="form-select">
 
-                            <td>
-                                @if (item.IsActive)
-                                {
-                                    <span class="badge bg-success-subtle text-success">
-                                        Active
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary-subtle text-secondary">
-                                        Inactive
-                                    </span>
-                                }
-                            </td>
+                    <option value="">
+                        All sites
+                    </option>
+
+                </select>
+
+            </div>
 
 
-                            <td class="text-end">
+            <div class="col-lg-2 col-md-6">
 
-                                <div class="d-inline-flex gap-2">
+                <label class="form-label">
+                    Status
+                </label>
 
-                                    <!-- Read-only access -->
-                                    <a asp-action="History"
-                                           asp-route-id="@item.Id"
-                                           class="btn btn-sm btn-outline-secondary">
-                                        History
-                                    </a>
+                <select name="status"
+                        class="form-select">
+
+                    <option value=""
+                            selected="@(ViewBag.Status == null)">
+                        All statuses
+                    </option>
+
+                    <option value="active"
+                            selected="@(ViewBag.Status == "active")">
+                        Active
+                    </option>
+
+                    <option value="inactive"
+                            selected="@(ViewBag.Status == "inactive")">
+                        Inactive
+                    </option>
+
+                </select>
+
+            </div>
 
 
-                                    <!-- Admin + Infrastructure Manager -->
-                                    @if (canManageInfrastructure)
-                                    {
-                                        <a asp-action="Edit"
-                                               asp-route-id="@item.Id"
-                                               class="btn btn-sm btn-outline-secondary">
-                                            Edit
-                                        </a>
-                                    }
+            <div class="col-lg-2 col-md-6">
 
+                <div class="d-flex gap-2">
 
-                                    <!-- Admin only -->
-                                    @if (isAdmin)
-                                    {
-                                        <form asp-action="ToggleStatus"
-                                              asp-route-id="@item.Id"
-                                              method="post">
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Apply
+                    </button>
 
-                                            @if (item.IsActive)
-                                            {
-                                                <button type="submit"
-                                                        class="btn btn-sm btn-outline-secondary">
-                                                    Deactivate
-                                                </button>
-                                            }
-                                            else
-                                            {
-                                                <button type="submit"
-                                                        class="btn btn-sm btn-outline-secondary">
-                                                    Activate
-                                                </button>
-                                            }
+                    <button type="button"
+                            id="clearSwitchFilters"
+                            class="btn btn-outline-secondary">
+                        Clear
+                    </button>
 
-                                        </form>
-                                    }
+                </div>
 
-                                </div>
-
-                            </td>
-
-                        </tr>
-                    }
-
-                </tbody>
-
-            </table>
+            </div>
 
         </div>
-    }
+
+    </div>
+
+</form>
+
+
+<div id="switchListContainer">
+
+    <partial name="_NetworkSwitchList"
+             model="Model" />
 
 </div>
+
+
+@section Scripts
+{
+    <script>
+        (() => {
+
+            const form =
+                document.getElementById("switchFilterForm");
+
+            const container =
+                document.getElementById("switchListContainer");
+
+            const clearButton =
+                document.getElementById("clearSwitchFilters");
+
+
+            async function loadSwitches(url) {
+
+                try {
+
+                    const response =
+                        await fetch(url, {
+                            headers: {
+                                "X-Requested-With":
+                                    "XMLHttpRequest"
+                            }
+                        });
+
+                    if (!response.ok) {
+                        throw new Error(
+                            "Failed to load switches.");
+                    }
+
+                    const html =
+                        await response.text();
+
+                    container.innerHTML =
+                        html;
+
+                    window.history.pushState(
+                        {},
+                        "",
+                        url);
+                }
+                catch (error) {
+                    console.error(error);
+                }
+            }
+
+
+            form.addEventListener(
+                "submit",
+                function (event) {
+
+                    event.preventDefault();
+
+                    const formData =
+                        new FormData(form);
+
+                    formData.set(
+                        "page",
+                        "1");
+
+                    const query =
+                        new URLSearchParams(
+                            formData);
+
+                    const url =
+                        `${form.action}?${query.toString()}`;
+
+                    loadSwitches(url);
+                });
+
+
+            clearButton.addEventListener(
+                "click",
+                function () {
+
+                    form.reset();
+
+                    loadSwitches(
+                        form.action);
+                });
+
+
+            container.addEventListener(
+                "click",
+                function (event) {
+
+                    const link =
+                        event.target.closest(
+                            "a[data-page-link]");
+
+                    if (!link) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    loadSwitches(
+                        link.href);
+                });
+
+
+            window.addEventListener(
+                "popstate",
+                function () {
+                    window.location.reload();
+                });
+
+        })();
+    </script>
+}

@@ -1,0 +1,311 @@
+﻿@using CameraOperationsManagement.Models
+@using CameraOperationsManagement.ViewModels.Common
+@using CameraOperationsManagement.ViewModels.Visits
+
+@model PagedResult<VisitListItemViewModel>
+
+@{
+    var canManageVisits =
+        User.IsInRole(AppRoles.Admin) ||
+        User.IsInRole(AppRoles.Editor);
+
+    var search =
+        Context.Request.Query["search"].ToString();
+
+    var siteId =
+        Context.Request.Query["siteId"].ToString();
+
+    var componentType =
+        Context.Request.Query["componentType"].ToString();
+
+    var workerId =
+        Context.Request.Query["workerId"].ToString();
+
+    var fromDate =
+        Context.Request.Query["fromDate"].ToString();
+
+    var toDate =
+        Context.Request.Query["toDate"].ToString();
+}
+
+
+<div class="app-card">
+
+    @if (!Model.Items.Any())
+    {
+        <div class="app-card-body text-center text-muted py-5">
+            No visits were found.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+
+            <table class="table">
+
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Site</th>
+                        <th>Component</th>
+                        <th>Purpose</th>
+                        <th>Malfunction</th>
+                        <th>Repair Result</th>
+                        <th>Workers</th>
+
+                        <th class="text-end">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    @foreach (var visit in Model.Items)
+                    {
+                        <tr>
+
+                            <td>
+
+                                <div>
+                                    @(visit.VisitDate.ToString(
+                                        "dd/MM/yyyy"))
+                                </div>
+
+                                <small class="text-muted">
+                                    @(visit.VisitDate.ToString(
+                                        "HH:mm"))
+                                </small>
+
+                            </td>
+
+
+                            <td>
+
+                                <strong>
+                                    @visit.SiteName
+                                </strong>
+
+                                <div class="text-muted small">
+                                    @visit.SiteId
+                                </div>
+
+                            </td>
+
+
+                            <td>
+
+                                <strong>
+                                    @visit.ComponentName
+                                </strong>
+
+                                <div class="text-muted small">
+                                    @visit.ComponentType
+                                </div>
+
+                            </td>
+
+
+                            <td>
+                                @visit.Purpose
+                            </td>
+
+
+                            <td>
+
+                                @if (string.IsNullOrWhiteSpace(
+                                    visit.MalfunctionType))
+                                {
+                                    <span class="badge bg-success-subtle text-success">
+                                        None
+                                    </span>
+                                }
+                                else
+                                {
+                                    @visit.MalfunctionType
+                                }
+
+                            </td>
+
+
+                            <td>
+
+                                @(string.IsNullOrWhiteSpace(
+                                    visit.RepairResult)
+                                    ? "—"
+                                    : visit.RepairResult)
+
+                            </td>
+
+
+                            <td>
+
+                                @if (visit.WorkerNames.Any())
+                                {
+                                    @string.Join(
+                                        ", ",
+                                        visit.WorkerNames)
+                                }
+                                else
+                                {
+                                    <span class="text-muted">
+                                        —
+                                    </span>
+                                }
+
+                            </td>
+
+
+                            <td class="text-end">
+
+                                <div class="d-inline-flex gap-2">
+
+                                    <a asp-action="Details"
+                                           asp-route-id="@visit.Id"
+                                           class="btn btn-sm btn-outline-secondary">
+                                        Details
+                                    </a>
+
+
+                                    @if (canManageVisits)
+                                    {
+                                        <a asp-action="Edit"
+                                               asp-route-id="@visit.Id"
+                                               class="btn btn-sm btn-outline-secondary">
+                                            Edit
+                                        </a>
+                                    }
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+        </div>
+    }
+
+</div>
+
+
+@if (Model.TotalPages > 1)
+{
+    <div class="d-flex
+        justify-content-between
+        align-items-center
+        mt-3">
+
+        <div class="text-muted small">
+
+            Showing page
+            @Model.Page
+            of
+            @Model.TotalPages
+            —
+            @Model.TotalItems
+            total records
+
+        </div>
+
+
+        <nav aria-label="Visit pagination">
+
+            <ul class="pagination mb-0">
+
+
+                <li class="page-item
+                    @(Model.HasPreviousPage
+                                            ? ""
+                                            : "disabled")">
+
+                    @if (Model.HasPreviousPage)
+                    {
+                        <a class="page-link"
+                               data-page-link
+                               asp-action="Index"
+                               asp-route-search="@search"
+                               asp-route-siteId="@siteId"
+                               asp-route-componentType="@componentType"
+                               asp-route-workerId="@workerId"
+                               asp-route-fromDate="@fromDate"
+                               asp-route-toDate="@toDate"
+                               asp-route-page="@(Model.Page - 1)">
+                            Previous
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="page-link">
+                            Previous
+                        </span>
+                    }
+
+                </li>
+
+
+                @for (var i = 1;
+                      i <= Model.TotalPages;
+                      i++)
+                {
+                    <li class="page-item
+                        @(i == Model.Page
+                                                    ? "active"
+                                                    : "")">
+
+                        <a class="page-link"
+                               data-page-link
+                               asp-action="Index"
+                               asp-route-search="@search"
+                               asp-route-siteId="@siteId"
+                               asp-route-componentType="@componentType"
+                               asp-route-workerId="@workerId"
+                               asp-route-fromDate="@fromDate"
+                               asp-route-toDate="@toDate"
+                               asp-route-page="@i">
+                            @i
+                        </a>
+
+                    </li>
+                }
+
+
+                <li class="page-item
+                    @(Model.HasNextPage
+                                            ? ""
+                                            : "disabled")">
+
+                    @if (Model.HasNextPage)
+                    {
+                        <a class="page-link"
+                               data-page-link
+                               asp-action="Index"
+                               asp-route-search="@search"
+                               asp-route-siteId="@siteId"
+                               asp-route-componentType="@componentType"
+                               asp-route-workerId="@workerId"
+                               asp-route-fromDate="@fromDate"
+                               asp-route-toDate="@toDate"
+                               asp-route-page="@(Model.Page + 1)">
+                            Next
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="page-link">
+                            Next
+                        </span>
+                    }
+
+                </li>
+
+            </ul>
+
+        </nav>
+
+    </div>
+}

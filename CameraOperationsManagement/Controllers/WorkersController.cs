@@ -22,22 +22,75 @@ namespace CameraOperationsManagement.Controllers
 
         // GET: Workers
         [HttpGet]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            string? search,
+            string? status)
         {
-            var workers = await _context.Workers
+            var query = _context.Workers
                 .AsNoTracking()
+                .AsQueryable();
+
+
+            // SEARCH
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.Trim();
+
+                query = query.Where(w =>
+                    w.FirstName.Contains(search) ||
+                    w.SecondName.Contains(search) ||
+                    w.LastName.Contains(search) ||
+                    (w.FirstName + " " +
+                     w.SecondName + " " +
+                     w.LastName).Contains(search));
+            }
+
+
+            // STATUS
+            if (status == "active")
+            {
+                query = query.Where(w =>
+                    w.IsActive);
+            }
+            else if (status == "inactive")
+            {
+                query = query.Where(w =>
+                    !w.IsActive);
+            }
+
+
+            var workers = await query
                 .OrderBy(w => w.FirstName)
                 .ThenBy(w => w.SecondName)
                 .ThenBy(w => w.LastName)
                 .Select(w => new WorkerListItemViewModel
                 {
                     Id = w.Id,
+
                     FirstName = w.FirstName,
+
                     SecondName = w.SecondName,
+
                     LastName = w.LastName,
+
                     IsActive = w.IsActive
                 })
                 .ToListAsync();
+
+
+            ViewBag.Search = search;
+
+            ViewBag.Status = status;
+
+
+            if (Request.Headers["X-Requested-With"] ==
+                "XMLHttpRequest")
+            {
+                return PartialView(
+                    "_WorkerList",
+                    workers);
+            }
+
 
             return View(workers);
         }
