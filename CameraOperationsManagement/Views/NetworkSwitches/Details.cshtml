@@ -1,0 +1,430 @@
+﻿@using CameraOperationsManagement.Models
+@using CameraOperationsManagement.Models.Enums
+
+@model CameraOperationsManagement.ViewModels.NetworkSwitches.NetworkSwitchDetailsViewModel
+
+@{
+    ViewData["Title"] = "Network Switch";
+
+    var canManageInfrastructure =
+        User.IsInRole(AppRoles.Admin) ||
+        User.IsInRole(AppRoles.InfrastructureManager);
+}
+
+
+<div class="page-header">
+
+        <div class="d-flex align-items-start gap-3">
+
+            <partial name="_BackButton" />
+
+            <div>
+
+                <h2 class="page-heading">
+                    @Model.Name
+                </h2>
+
+                <p class="page-description">
+                    Network switch information, connections, and port status.
+                </p>
+
+            </div>
+
+        </div>
+
+
+    <div class="d-flex gap-2">
+
+        <a asp-action="History"
+               asp-route-id="@Model.Id"
+               class="btn btn-outline-secondary">
+            History
+        </a>
+
+        @if (canManageInfrastructure)
+        {
+            <a asp-action="Edit"
+                   asp-route-id="@Model.Id"
+                   class="btn btn-primary">
+                Edit Switch
+            </a>
+        }
+
+    </div>
+
+</div>
+
+
+<div class="row g-3 mb-4">
+
+    <div class="col-lg-3 col-md-6">
+        <div class="app-card h-100">
+            <div class="app-card-body">
+
+                <div class="text-muted small mb-1">
+                    Site
+                </div>
+
+                <strong>
+                    @Model.SiteName
+                </strong>
+
+                <div class="text-muted small">
+                    @Model.SiteId
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <div class="col-lg-3 col-md-6">
+        <div class="app-card h-100">
+            <div class="app-card-body">
+
+                <div class="text-muted small mb-1">
+                    Total Ports
+                </div>
+
+                <h4 class="mb-0">
+                    @Model.NumberOfPorts
+                </h4>
+
+            </div>
+        </div>
+    </div>
+
+
+    <div class="col-lg-3 col-md-6">
+        <div class="app-card h-100">
+            <div class="app-card-body">
+
+                <div class="text-muted small mb-1">
+                    Used Ports
+                </div>
+
+                <h4 class="mb-0">
+                    @Model.UsedPorts
+                </h4>
+
+            </div>
+        </div>
+    </div>
+
+
+    <div class="col-lg-3 col-md-6">
+        <div class="app-card h-100">
+            <div class="app-card-body">
+
+                <div class="text-muted small mb-1">
+                    Status
+                </div>
+
+                @if (Model.IsActive)
+                {
+                    <span class="badge bg-success-subtle text-success">
+                        Active
+                    </span>
+                }
+                else
+                {
+                    <span class="badge bg-secondary-subtle text-secondary">
+                        Inactive
+                    </span>
+                }
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<div class="app-card mb-4">
+
+    <div class="app-card-body">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+
+            <div>
+                <h5 class="mb-1">
+                    Ports
+                </h5>
+
+                <p class="text-muted mb-0">
+                    Current physical port usage for this switch.
+                </p>
+            </div>
+
+            <div class="d-flex gap-2">
+
+                <span class="badge bg-success-subtle text-success">
+                    @Model.AvailablePorts Available
+                </span>
+
+                <span class="badge bg-primary-subtle text-primary">
+                    @Model.UsedPorts Used
+                </span>
+
+                <span class="badge bg-danger-subtle text-danger">
+                    @Model.OutOfServicePorts Out of Service
+                </span>
+
+            </div>
+
+        </div>
+
+
+        @if (!Model.Ports.Any())
+        {
+            <div class="text-muted py-4 text-center">
+                Ports have not been configured for this switch.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+
+                <table class="table align-middle">
+
+                    <thead>
+                        <tr>
+                            <th>Port</th>
+                            <th>Status</th>
+                            <th>Connected Camera</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var port in Model.Ports)
+                        {
+                            <tr>
+
+                                <td>
+                                    <strong>
+                                        Port @port.PortNumber
+                                    </strong>
+                                </td>
+
+
+                                <td>
+
+                                    @switch (port.Status)
+                                    {
+                                        case SwitchPortStatus.Available:
+
+                                            <span class="badge bg-success-subtle text-success">
+                                                Available
+                                            </span>
+
+                                            break;
+
+
+                                        case SwitchPortStatus.Used:
+
+                                            <span class="badge bg-primary-subtle text-primary">
+                                                Used
+                                            </span>
+
+                                            break;
+
+
+                                        case SwitchPortStatus.OutOfService:
+
+                                            <span class="badge bg-danger-subtle text-danger">
+                                                Out of Service
+                                            </span>
+
+                                            break;
+                                    }
+
+                                </td>
+
+
+                                <td>
+                                    @if (port.CameraId.HasValue)
+                                    {
+                                        <div>
+
+                                            <a asp-controller="Cameras"
+                                                   asp-action="History"
+                                                   asp-route-id="@port.CameraId"
+                                                   class="fw-semibold text-decoration-none">
+
+                                                @port.CameraName
+
+                                            </a>
+
+
+                                            @if (!string.IsNullOrWhiteSpace(
+                                                port.CameraIpAddress))
+                                            {
+                                                <div class="text-muted small mt-1">
+
+                                                    <span class="fw-semibold">
+                                                        IP:
+                                                    </span>
+
+                                                    @port.CameraIpAddress
+
+                                                </div>
+                                            }
+
+
+                                            @if (!string.IsNullOrWhiteSpace(
+                                                port.CameraInstallationLocation))
+                                            {
+                                                <div class="text-muted small">
+
+                                                    <span class="fw-semibold">
+                                                        Location:
+                                                    </span>
+
+                                                    @port.CameraInstallationLocation
+
+                                                </div>
+                                            }
+
+
+                                            @if (!string.IsNullOrWhiteSpace(
+                                                port.CameraDescription))
+                                            {
+                                                <div class="small mt-1">
+
+                                                    @port.CameraDescription
+
+                                                </div>
+                                            }
+
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">
+                                            —
+                                        </span>
+                                    }
+
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+        }
+
+    </div>
+
+</div>
+
+
+<div class="app-card">
+
+    <div class="app-card-body">
+
+        <div class="mb-3">
+
+            <h5 class="mb-1">
+                Connected Recorders
+            </h5>
+
+            <p class="text-muted mb-0">
+                Recorders assigned to this network switch.
+            </p>
+
+        </div>
+
+
+        @if (!Model.Recorders.Any())
+        {
+            <div class="text-muted py-4 text-center">
+                No recorders are currently assigned to this switch.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+
+                <table class="table align-middle">
+
+                    <thead>
+                        <tr>
+                            <th>Recorder</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var recorder in Model.Recorders)
+                        {
+                            <tr>
+
+                                <td>
+                                    <strong>
+                                        @recorder.Name
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    @recorder.Type
+                                </td>
+
+                                <td>
+
+                                    @if (recorder.IsActive)
+                                    {
+                                        <span class="badge bg-success-subtle text-success">
+                                            Active
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary">
+                                            Inactive
+                                        </span>
+                                    }
+
+                                </td>
+
+                                <td class="text-end">
+
+                                    <a asp-controller="Recorders"
+                                           asp-action="History"
+                                           asp-route-id="@recorder.Id"
+                                           class="btn btn-sm btn-outline-secondary">
+                                        History
+                                    </a>
+
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+        }
+
+    </div>
+
+</div>
+
+
+<div class="mt-4">
+
+    <a asp-action="Index"
+           class="btn btn-outline-secondary">
+        Back to Switches
+    </a>
+
+</div>

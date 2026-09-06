@@ -5,7 +5,9 @@
 }
 
 <div class="page-header">
+    <div class="d-flex align-items-start gap-3">
 
+        <partial name="_BackButton" />
     <div>
         <h2 class="page-heading">
             Camera History
@@ -15,7 +17,7 @@
             Complete operational history for @Model.CameraName.
         </p>
     </div>
-
+    </div>
     <div class="d-flex gap-2">
 
         <a asp-action="ExportHistoryPdf"

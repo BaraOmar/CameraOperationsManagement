@@ -22,5 +22,10 @@ namespace CameraOperationsManagement.Models
 
 
         public Site Site { get; set; } = null!;
+
+        public int NumberOfPorts { get; set; }
+
+        public ICollection<NetworkSwitchPort> Ports { get; set; }
+            = new List<NetworkSwitchPort>();
     }
 }

@@ -65,5 +65,8 @@ namespace CameraOperationsManagement.ViewModels.Cameras
 
         [Display(Name = "Network Switch")]
         public int? NetworkSwitchId { get; set; }
+
+        [Display(Name = "Switch Port")]
+        public int? NetworkSwitchPortId { get; set; }
     }
 }

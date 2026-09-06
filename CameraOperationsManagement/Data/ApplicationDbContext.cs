@@ -38,6 +38,8 @@ namespace CameraOperationsManagement.Data
         public DbSet<Visit> Visits { get; set; }
 
         public DbSet<VisitWorker> VisitWorkers { get; set; }
+
+        public DbSet<NetworkSwitchPort> NetworkSwitchPorts { get; set; }
         protected override void OnModelCreating(
             ModelBuilder builder)
         {
@@ -245,6 +247,36 @@ namespace CameraOperationsManagement.Data
         v.SiteId,
         v.VisitDate
     });
+
+            builder.Entity<NetworkSwitchPort>(entity =>
+            {
+                // A switch cannot have duplicate port numbers.
+                entity.HasIndex(p => new
+                {
+                    p.NetworkSwitchId,
+                    p.PortNumber
+                })
+                .IsUnique();
+
+
+                // One camera can be connected to only one switch port.
+                entity.HasIndex(p => p.CameraId)
+                    .IsUnique()
+                    .HasFilter("[CameraId] IS NOT NULL");
+
+
+                entity.HasOne(p => p.NetworkSwitch)
+                    .WithMany(s => s.Ports)
+                    .HasForeignKey(p => p.NetworkSwitchId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+
+                entity.HasOne(p => p.Camera)
+                    .WithOne()
+                    .HasForeignKey<NetworkSwitchPort>(p => p.CameraId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
         }
+
     }
 }

@@ -6,7 +6,7 @@
 
 <div class="row g-3">
 
-    <div class="col-md-6">
+    <div class="col-md-4">
 
         <label asp-for="Name"
                class="form-label">
@@ -23,7 +23,7 @@
     </div>
 
 
-    <div class="col-md-6">
+    <div class="col-md-4">
 
         <label asp-for="SiteId"
                class="form-label">
@@ -40,6 +40,57 @@
         </select>
 
         <span asp-validation-for="SiteId"
+              class="text-danger">
+        </span>
+
+    </div>
+
+
+    <div class="col-md-4">
+
+        <label asp-for="NumberOfPorts"
+               class="form-label">
+        </label>
+
+        @if (ViewBag.CanChangePortCount == false)
+        {
+            <input asp-for="NumberOfPorts"
+                   type="hidden" />
+
+            <input type="text"
+                   value="@Model.NumberOfPorts Ports"
+                   class="form-control"
+                   readonly />
+        }
+        else
+        {
+            <select asp-for="NumberOfPorts"
+                    class="form-select">
+
+                <option value="">
+                    Select number of ports
+                </option>
+
+                <option value="4">
+                    4 Ports
+                </option>
+
+                <option value="8">
+                    8 Ports
+                </option>
+
+                <option value="16">
+                    16 Ports
+                </option>
+
+                <option value="32">
+                    32 Ports
+                </option>
+
+            </select>
+        }
+
+        <span asp-validation-for="NumberOfPorts"
               class="text-danger">
         </span>
 

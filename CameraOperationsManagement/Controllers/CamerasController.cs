@@ -1,5 +1,6 @@
 ﻿using CameraOperationsManagement.Data;
 using CameraOperationsManagement.Models;
+using CameraOperationsManagement.Models.Enums;
 using CameraOperationsManagement.Services;
 using CameraOperationsManagement.ViewModels.Cameras;
 using CameraOperationsManagement.ViewModels.Common;
@@ -174,7 +175,10 @@ namespace CameraOperationsManagement.Controllers
 
             LoadEmptySwitchList();
 
-            return View(new CameraFormViewModel());
+            LoadEmptyPortList();
+
+            return View(
+                new CameraFormViewModel());
         }
 
 
@@ -186,13 +190,14 @@ namespace CameraOperationsManagement.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
-    CameraFormViewModel viewModel)
+            CameraFormViewModel viewModel)
         {
             var recorder = await _context.Recorders
                 .AsNoTracking()
                 .FirstOrDefaultAsync(r =>
                     r.Id == viewModel.RecorderId &&
                     r.IsActive);
+
 
             if (recorder == null)
             {
@@ -202,6 +207,7 @@ namespace CameraOperationsManagement.Controllers
             }
 
 
+            // Validate switch.
             if (viewModel.NetworkSwitchId.HasValue &&
                 recorder != null)
             {
@@ -215,6 +221,63 @@ namespace CameraOperationsManagement.Controllers
             }
 
 
+            NetworkSwitchPort? selectedPort = null;
+
+
+            // If a switch is selected, a port must also be selected.
+            if (viewModel.NetworkSwitchId.HasValue)
+            {
+                if (!viewModel.NetworkSwitchPortId.HasValue)
+                {
+                    ModelState.AddModelError(
+                        nameof(viewModel.NetworkSwitchPortId),
+                        "Please select an available switch port.");
+                }
+                else
+                {
+                    selectedPort =
+                        await _context.NetworkSwitchPorts
+                            .Include(p => p.NetworkSwitch)
+                            .FirstOrDefaultAsync(p =>
+                                p.Id ==
+                                    viewModel.NetworkSwitchPortId.Value &&
+                                p.NetworkSwitchId ==
+                                    viewModel.NetworkSwitchId.Value);
+
+
+                    if (selectedPort == null)
+                    {
+                        ModelState.AddModelError(
+                            nameof(viewModel.NetworkSwitchPortId),
+                            "The selected port is invalid.");
+                    }
+                    else if (
+                        selectedPort.Status !=
+                            SwitchPortStatus.Available ||
+                        selectedPort.CameraId.HasValue)
+                    {
+                        ModelState.AddModelError(
+                            nameof(viewModel.NetworkSwitchPortId),
+                            "The selected port is no longer available.");
+                    }
+                    else if (
+                        recorder != null &&
+                        selectedPort.NetworkSwitch.SiteId !=
+                            recorder.SiteId)
+                    {
+                        ModelState.AddModelError(
+                            nameof(viewModel.NetworkSwitchPortId),
+                            "The selected port does not belong to the camera's site.");
+                    }
+                }
+            }
+            else
+            {
+                // Camera without a switch cannot have a port.
+                viewModel.NetworkSwitchPortId = null;
+            }
+
+
             if (!ModelState.IsValid)
             {
                 await LoadRecordersAsync(
@@ -224,21 +287,36 @@ namespace CameraOperationsManagement.Controllers
                     viewModel.RecorderId,
                     viewModel.NetworkSwitchId);
 
+                await LoadPortsForSwitchAsync(
+                    viewModel.NetworkSwitchId,
+                    viewModel.NetworkSwitchPortId);
+
                 return View(viewModel);
             }
 
 
             var camera = new Camera
             {
-                Name = viewModel.Name.Trim(),
-                Brand = Normalize(viewModel.Brand),
-                Model = Normalize(viewModel.Model),
-                SerialNumber = Normalize(viewModel.SerialNumber),
-                Type = Normalize(viewModel.Type),
+                Name =
+                    viewModel.Name.Trim(),
 
-                Environment = viewModel.Environment!.Value,
+                Brand =
+                    Normalize(viewModel.Brand),
 
-                IpAddress = Normalize(viewModel.IpAddress),
+                Model =
+                    Normalize(viewModel.Model),
+
+                SerialNumber =
+                    Normalize(viewModel.SerialNumber),
+
+                Type =
+                    Normalize(viewModel.Type),
+
+                Environment =
+                    viewModel.Environment!.Value,
+
+                IpAddress =
+                    Normalize(viewModel.IpAddress),
 
                 InstallationLocation =
                     viewModel.InstallationLocation.Trim(),
@@ -255,11 +333,23 @@ namespace CameraOperationsManagement.Controllers
                 NetworkSwitchId =
                     viewModel.NetworkSwitchId,
 
-                IsActive = true
+                IsActive =
+                    true
             };
 
 
             _context.Cameras.Add(camera);
+
+
+            if (selectedPort != null)
+            {
+                selectedPort.Camera =
+                    camera;
+
+                selectedPort.Status =
+                    SwitchPortStatus.Used;
+            }
+
 
             await _context.SaveChangesAsync();
 
@@ -267,7 +357,9 @@ namespace CameraOperationsManagement.Controllers
             TempData["SuccessMessage"] =
                 "Camera created successfully.";
 
-            return RedirectToAction(nameof(Index));
+
+            return RedirectToAction(
+                nameof(Index));
         }
 
         // =====================================================
@@ -287,7 +379,11 @@ namespace CameraOperationsManagement.Controllers
             {
                 return NotFound();
             }
-
+            var currentPort =
+    await _context.NetworkSwitchPorts
+        .AsNoTracking()
+        .FirstOrDefaultAsync(p =>
+            p.CameraId == camera.Id);
 
             var model = new CameraFormViewModel
             {
@@ -313,7 +409,9 @@ namespace CameraOperationsManagement.Controllers
                     camera.RecorderId,
 
                 NetworkSwitchId =
-                    camera.NetworkSwitchId
+                    camera.NetworkSwitchId,
+                NetworkSwitchPortId =
+    currentPort?.Id
             };
 
 
@@ -325,7 +423,10 @@ namespace CameraOperationsManagement.Controllers
                 camera.RecorderId,
                 camera.NetworkSwitchId,
                 camera.NetworkSwitchId);
-
+            await LoadPortsForSwitchAsync(
+    camera.NetworkSwitchId,
+    currentPort?.Id,
+    camera.Id);
             return View(model);
         }
 
@@ -357,6 +458,13 @@ namespace CameraOperationsManagement.Controllers
             }
 
 
+            // Current port used by this camera, if any.
+            var currentPort =
+                await _context.NetworkSwitchPorts
+                    .FirstOrDefaultAsync(p =>
+                        p.CameraId == camera.Id);
+
+
             var recorder = await _context.Recorders
                 .AsNoTracking()
                 .FirstOrDefaultAsync(r =>
@@ -366,6 +474,7 @@ namespace CameraOperationsManagement.Controllers
                         r.Id == camera.RecorderId
                     ));
 
+
             if (recorder == null)
             {
                 ModelState.AddModelError(
@@ -374,6 +483,7 @@ namespace CameraOperationsManagement.Controllers
             }
 
 
+            // Validate switch.
             if (viewModel.NetworkSwitchId.HasValue &&
                 recorder != null)
             {
@@ -389,7 +499,8 @@ namespace CameraOperationsManagement.Controllers
                     var switchIsValid =
                         await _context.NetworkSwitches
                             .AnyAsync(s =>
-                                s.Id == viewModel.NetworkSwitchId.Value &&
+                                s.Id ==
+                                    viewModel.NetworkSwitchId.Value &&
                                 (
                                     s.IsActive ||
                                     s.Id == camera.NetworkSwitchId
@@ -405,20 +516,145 @@ namespace CameraOperationsManagement.Controllers
             }
 
 
+            NetworkSwitchPort? selectedPort = null;
+
+
+            // If a switch is selected, a port is required.
+            if (viewModel.NetworkSwitchId.HasValue)
+            {
+                if (!viewModel.NetworkSwitchPortId.HasValue)
+                {
+                    ModelState.AddModelError(
+                        nameof(viewModel.NetworkSwitchPortId),
+                        "Please select a switch port.");
+                }
+                else
+                {
+                    selectedPort =
+                        await _context.NetworkSwitchPorts
+                            .Include(p => p.NetworkSwitch)
+                            .FirstOrDefaultAsync(p =>
+                                p.Id ==
+                                    viewModel.NetworkSwitchPortId.Value &&
+                                p.NetworkSwitchId ==
+                                    viewModel.NetworkSwitchId.Value);
+
+
+                    if (selectedPort == null)
+                    {
+                        ModelState.AddModelError(
+                            nameof(viewModel.NetworkSwitchPortId),
+                            "The selected port is invalid.");
+                    }
+                    else
+                    {
+                        var isCurrentCameraPort =
+                            selectedPort.CameraId ==
+                            camera.Id;
+
+
+                        // Allow:
+                        // 1. An available unused port
+                        // 2. This camera's current used port
+                        var portIsAvailable =
+                            selectedPort.Status ==
+                                SwitchPortStatus.Available &&
+                            selectedPort.CameraId == null;
+
+
+                        if (!portIsAvailable &&
+                            !isCurrentCameraPort)
+                        {
+                            ModelState.AddModelError(
+                                nameof(viewModel.NetworkSwitchPortId),
+                                "The selected port is not available.");
+                        }
+
+
+                        if (recorder != null &&
+                            selectedPort.NetworkSwitch.SiteId !=
+                                recorder.SiteId)
+                        {
+                            ModelState.AddModelError(
+                                nameof(viewModel.NetworkSwitchPortId),
+                                "The selected port does not belong to the camera's site.");
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // No switch means no port.
+                viewModel.NetworkSwitchPortId =
+                    null;
+            }
+
+
             if (!ModelState.IsValid)
             {
                 await LoadRecordersAsync(
                     viewModel.RecorderId,
                     camera.RecorderId);
 
+
                 await LoadSwitchForRecorderAsync(
                     viewModel.RecorderId,
                     viewModel.NetworkSwitchId,
                     camera.NetworkSwitchId);
 
+
+                await LoadPortsForSwitchAsync(
+                    viewModel.NetworkSwitchId,
+                    viewModel.NetworkSwitchPortId,
+                    camera.Id);
+
+
                 return View(viewModel);
             }
 
+
+            // =====================================================
+            // UPDATE PORT ASSIGNMENT
+            // =====================================================
+
+            // Camera is being disconnected from a switch.
+            if (!viewModel.NetworkSwitchId.HasValue)
+            {
+                if (currentPort != null)
+                {
+                    currentPort.CameraId =
+                        null;
+
+                    currentPort.Status =
+                        SwitchPortStatus.Available;
+                }
+            }
+            else if (selectedPort != null)
+            {
+                // Camera moved to a different port.
+                if (currentPort != null &&
+                    currentPort.Id != selectedPort.Id)
+                {
+                    currentPort.CameraId =
+                        null;
+
+                    currentPort.Status =
+                        SwitchPortStatus.Available;
+                }
+
+
+                // Assign the selected port to this camera.
+                selectedPort.CameraId =
+                    camera.Id;
+
+                selectedPort.Status =
+                    SwitchPortStatus.Used;
+            }
+
+
+            // =====================================================
+            // UPDATE CAMERA
+            // =====================================================
 
             camera.Name =
                 viewModel.Name.Trim();
@@ -434,8 +670,10 @@ namespace CameraOperationsManagement.Controllers
 
             camera.Type =
                 Normalize(viewModel.Type);
+
             camera.Environment =
-    viewModel.Environment!.Value;
+                viewModel.Environment!.Value;
+
             camera.IpAddress =
                 Normalize(viewModel.IpAddress);
 
@@ -461,7 +699,9 @@ namespace CameraOperationsManagement.Controllers
             TempData["SuccessMessage"] =
                 "Camera updated successfully.";
 
-            return RedirectToAction(nameof(Index));
+
+            return RedirectToAction(
+                nameof(Index));
         }
 
         // =====================================================
@@ -544,7 +784,37 @@ namespace CameraOperationsManagement.Controllers
                 }
             });
         }
+        [Authorize(Policy = "CanManageInfrastructure")]
+        [HttpGet]
+        public async Task<IActionResult> GetAvailablePorts(
+    int switchId,
+    int? currentCameraId = null)
+        {
+            var ports = await _context.NetworkSwitchPorts
+                .AsNoTracking()
+                .Where(p =>
+                    p.NetworkSwitchId == switchId &&
+                    (
+                        (
+                            p.Status == SwitchPortStatus.Available &&
+                            p.CameraId == null
+                        )
+                        ||
+                        (
+                            currentCameraId.HasValue &&
+                            p.CameraId == currentCameraId.Value
+                        )
+                    ))
+                .OrderBy(p => p.PortNumber)
+                .Select(p => new
+                {
+                    id = p.Id,
+                    text = "Port " + p.PortNumber
+                })
+                .ToListAsync();
 
+            return Json(ports);
+        }
 
         // =====================================================
         // DROPDOWN HELPERS
@@ -612,7 +882,60 @@ namespace CameraOperationsManagement.Controllers
                     selectedSwitchId);
         }
 
+        private void LoadEmptyPortList()
+        {
+            ViewBag.SwitchPorts =
+                new List<SelectListItem>();
+        }
+        private async Task LoadPortsForSwitchAsync(
+    int? switchId,
+    int? selectedPortId = null,
+    int? currentCameraId = null)
+        {
+            if (!switchId.HasValue)
+            {
+                LoadEmptyPortList();
+                return;
+            }
 
+
+            var ports = await _context.NetworkSwitchPorts
+                .AsNoTracking()
+                .Where(p =>
+                    p.NetworkSwitchId == switchId.Value &&
+                    (
+                        (
+                            p.Status ==
+                                SwitchPortStatus.Available &&
+                            p.CameraId == null
+                        )
+                        ||
+                        (
+                            currentCameraId.HasValue &&
+                            p.CameraId ==
+                                currentCameraId.Value
+                        )
+                    ))
+                .OrderBy(p => p.PortNumber)
+                .Select(p => new
+                {
+                    p.Id,
+                    p.PortNumber
+                })
+                .ToListAsync();
+
+
+            ViewBag.SwitchPorts =
+                new SelectList(
+                    ports.Select(p => new
+                    {
+                        p.Id,
+                        Name = $"Port {p.PortNumber}"
+                    }),
+                    "Id",
+                    "Name",
+                    selectedPortId);
+        }
         private void LoadEmptySwitchList()
         {
             ViewBag.Switches =

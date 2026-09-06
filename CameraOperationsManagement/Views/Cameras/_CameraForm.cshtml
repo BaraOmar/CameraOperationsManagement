@@ -170,7 +170,28 @@
 
     </div>
 
+    <div class="col-md-6">
 
+        <label asp-for="NetworkSwitchPortId"
+               class="form-label">
+        </label>
+
+        <select asp-for="NetworkSwitchPortId"
+                asp-items="ViewBag.SwitchPorts"
+                class="form-select"
+                id="portSelect">
+
+            <option value="">
+                Select port
+            </option>
+
+        </select>
+
+        <span asp-validation-for="NetworkSwitchPortId"
+              class="text-danger">
+        </span>
+
+    </div>
     <div class="col-md-8">
 
         <label asp-for="InstallationLocation"

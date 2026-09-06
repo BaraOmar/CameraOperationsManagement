@@ -1,5 +1,6 @@
 ﻿using CameraOperationsManagement.Data;
 using CameraOperationsManagement.Models;
+using CameraOperationsManagement.Models.Enums;
 using CameraOperationsManagement.ViewModels.Common;
 using CameraOperationsManagement.ViewModels.NetworkSwitches;
 using Microsoft.AspNetCore.Authorization;
@@ -178,14 +179,16 @@ namespace CameraOperationsManagement.Controllers
         public async Task<IActionResult> Create(
             NetworkSwitchFormViewModel model)
         {
-            model.Name = model.Name.Trim();
+            model.Name =
+                (model.Name ?? string.Empty).Trim();
 
 
             // Validate selected Site
-            var siteExists = await _context.Sites
-                .AnyAsync(s =>
-                    s.Id == model.SiteId &&
-                    s.IsActive);
+            var siteExists =
+                await _context.Sites
+                    .AnyAsync(s =>
+                        s.Id == model.SiteId &&
+                        s.IsActive);
 
             if (!siteExists)
             {
@@ -195,11 +198,32 @@ namespace CameraOperationsManagement.Controllers
             }
 
 
+            // Validate number of ports
+            var allowedPortCounts =
+                new[]
+                {
+            4,
+            8,
+            16,
+            32
+                };
+
+            if (!model.NumberOfPorts.HasValue ||
+                !allowedPortCounts.Contains(
+                    model.NumberOfPorts.Value))
+            {
+                ModelState.AddModelError(
+                    nameof(model.NumberOfPorts),
+                    "Please select 4, 8, 16, or 32 ports.");
+            }
+
+
             // Switch Name must be unique within the selected Site
-            var nameExists = await _context.NetworkSwitches
-                .AnyAsync(s =>
-                    s.SiteId == model.SiteId &&
-                    s.Name == model.Name);
+            var nameExists =
+                await _context.NetworkSwitches
+                    .AnyAsync(s =>
+                        s.SiteId == model.SiteId &&
+                        s.Name == model.Name);
 
             if (nameExists)
             {
@@ -211,21 +235,49 @@ namespace CameraOperationsManagement.Controllers
 
             if (!ModelState.IsValid)
             {
-                await LoadSitesAsync(model.SiteId);
+                await LoadSitesAsync(
+                    model.SiteId);
 
                 return View(model);
             }
 
 
-            var networkSwitch = new NetworkSwitch
+            var networkSwitch =
+                new NetworkSwitch
+                {
+                    Name =
+                        model.Name,
+
+                    SiteId =
+                        model.SiteId,
+
+                    NumberOfPorts =
+                        model.NumberOfPorts!.Value,
+
+                    IsActive =
+                        true
+                };
+
+
+            // Automatically create all physical ports.
+            for (var portNumber = 1;
+                 portNumber <= model.NumberOfPorts.Value;
+                 portNumber++)
             {
-                Name = model.Name,
-                SiteId = model.SiteId,
-                IsActive = true
-            };
+                networkSwitch.Ports.Add(
+                    new NetworkSwitchPort
+                    {
+                        PortNumber =
+                            portNumber,
+
+                        Status =
+                            SwitchPortStatus.Available
+                    });
+            }
 
 
-            _context.NetworkSwitches.Add(networkSwitch);
+            _context.NetworkSwitches.Add(
+                networkSwitch);
 
             await _context.SaveChangesAsync();
 
@@ -233,9 +285,10 @@ namespace CameraOperationsManagement.Controllers
             TempData["SuccessMessage"] =
                 "Network switch created successfully.";
 
-            return RedirectToAction(nameof(Index));
-        }
 
+            return RedirectToAction(
+                nameof(Index));
+        }
 
         // GET: NetworkSwitches/Edit/5
         [Authorize(Policy = "CanManageInfrastructure")]
@@ -245,6 +298,8 @@ namespace CameraOperationsManagement.Controllers
             var networkSwitch =
                 await _context.NetworkSwitches
                     .AsNoTracking()
+                    .Include(s => s.Ports)
+                        .ThenInclude(p => p.Camera)
                     .FirstOrDefaultAsync(s => s.Id == id);
 
             if (networkSwitch == null)
@@ -252,12 +307,43 @@ namespace CameraOperationsManagement.Controllers
                 return NotFound();
             }
 
+
             var model = new NetworkSwitchFormViewModel
             {
                 Id = networkSwitch.Id,
+
                 Name = networkSwitch.Name,
-                SiteId = networkSwitch.SiteId
+
+                SiteId = networkSwitch.SiteId,
+
+                NumberOfPorts =
+                    networkSwitch.NumberOfPorts == 0
+                        ? null
+                        : networkSwitch.NumberOfPorts,
+
+                Ports = networkSwitch.Ports
+                    .OrderBy(p => p.PortNumber)
+                    .Select(p => new NetworkSwitchPortEditViewModel
+                    {
+                        Id = p.Id,
+
+                        PortNumber = p.PortNumber,
+
+                        Status = p.Status,
+
+                        CameraName =
+                            p.Camera != null
+                                ? p.Camera.Name
+                                : null
+                    })
+                    .ToList()
             };
+
+
+            // Old switches with 0 ports may choose the count once.
+            ViewBag.CanChangePortCount =
+                networkSwitch.NumberOfPorts == 0;
+
 
             await LoadSitesAsync(model.SiteId);
 
@@ -278,22 +364,80 @@ namespace CameraOperationsManagement.Controllers
                 return BadRequest();
             }
 
-            if (!await _context.Sites
+
+            var networkSwitch =
+                await _context.NetworkSwitches
+                    .Include(s => s.Ports)
+                        .ThenInclude(p => p.Camera)
+                    .FirstOrDefaultAsync(s => s.Id == id);
+
+            if (networkSwitch == null)
+            {
+                return NotFound();
+            }
+
+
+            model.Name =
+                (model.Name ?? string.Empty).Trim();
+
+
+            var isOldSwitch =
+                networkSwitch.NumberOfPorts == 0;
+
+
+            // Existing configured switches cannot change port count.
+            if (!isOldSwitch)
+            {
+                model.NumberOfPorts =
+                    networkSwitch.NumberOfPorts;
+
+                ModelState.Remove(
+                    nameof(model.NumberOfPorts));
+            }
+            else
+            {
+                var allowedPortCounts =
+                    new[]
+                    {
+                4,
+                8,
+                16,
+                32
+                    };
+
+                if (!model.NumberOfPorts.HasValue ||
+                    !allowedPortCounts.Contains(
+                        model.NumberOfPorts.Value))
+                {
+                    ModelState.AddModelError(
+                        nameof(model.NumberOfPorts),
+                        "Please select 4, 8, 16, or 32 ports.");
+                }
+            }
+
+
+            // Validate selected site.
+            var siteExists =
+                await _context.Sites
                     .AnyAsync(s =>
                         s.Id == model.SiteId &&
-                        s.IsActive))
+                        s.IsActive);
+
+            if (!siteExists)
             {
                 ModelState.AddModelError(
                     nameof(model.SiteId),
                     "Please select a valid active site.");
             }
-            model.Name = model.Name.Trim();
 
-            var nameExists = await _context.NetworkSwitches
-                .AnyAsync(s =>
-                    s.SiteId == model.SiteId &&
-                    s.Name == model.Name &&
-                    s.Id != id);
+
+            // Unique switch name inside the site.
+            var nameExists =
+                await _context.NetworkSwitches
+                    .AnyAsync(s =>
+                        s.SiteId == model.SiteId &&
+                        s.Name == model.Name &&
+                        s.Id != id);
 
             if (nameExists)
             {
@@ -301,33 +445,259 @@ namespace CameraOperationsManagement.Controllers
                     nameof(model.Name),
                     "A switch with this name already exists at the selected site.");
             }
+
+
+            // Validate requested port states.
+            foreach (var port in networkSwitch.Ports)
+            {
+                // Used is automatic and cannot be manually changed.
+                if (port.CameraId.HasValue)
+                {
+                    port.Status =
+                        SwitchPortStatus.Used;
+
+                    continue;
+                }
+
+
+                var postedPort =
+                    model.Ports.FirstOrDefault(p =>
+                        p.Id == port.Id);
+
+                if (postedPort == null)
+                {
+                    continue;
+                }
+
+
+                if (postedPort.Status !=
+                        SwitchPortStatus.Available &&
+                    postedPort.Status !=
+                        SwitchPortStatus.OutOfService)
+                {
+                    ModelState.AddModelError(
+                        string.Empty,
+                        $"Port {port.PortNumber} has an invalid state.");
+                }
+            }
+
+
             if (!ModelState.IsValid)
             {
-                await LoadSitesAsync(model.SiteId);
+                model.Ports =
+                    networkSwitch.Ports
+                        .OrderBy(p => p.PortNumber)
+                        .Select(p =>
+                            new NetworkSwitchPortEditViewModel
+                            {
+                                Id = p.Id,
+
+                                PortNumber =
+                                    p.PortNumber,
+
+                                Status =
+                                    p.Status,
+
+                                CameraName =
+                                    p.Camera != null
+                                        ? p.Camera.Name
+                                        : null
+                            })
+                        .ToList();
+
+
+                ViewBag.CanChangePortCount =
+                    isOldSwitch;
+
+
+                await LoadSitesAsync(
+                    model.SiteId);
+
 
                 return View(model);
             }
 
+
+            networkSwitch.Name =
+                model.Name;
+
+            networkSwitch.SiteId =
+                model.SiteId;
+
+
+            // Existing old switch:
+            // configure its real physical ports once.
+            if (isOldSwitch)
+            {
+                networkSwitch.NumberOfPorts =
+                    model.NumberOfPorts!.Value;
+
+
+                for (var portNumber = 1;
+                     portNumber <=
+                        networkSwitch.NumberOfPorts;
+                     portNumber++)
+                {
+                    networkSwitch.Ports.Add(
+                        new NetworkSwitchPort
+                        {
+                            PortNumber =
+                                portNumber,
+
+                            Status =
+                                SwitchPortStatus.Available
+                        });
+                }
+            }
+            else
+            {
+                // Update only unused port states.
+                foreach (var port in
+                         networkSwitch.Ports)
+                {
+                    if (port.CameraId.HasValue)
+                    {
+                        port.Status =
+                            SwitchPortStatus.Used;
+
+                        continue;
+                    }
+
+
+                    var postedPort =
+                        model.Ports.FirstOrDefault(p =>
+                            p.Id == port.Id);
+
+                    if (postedPort == null)
+                    {
+                        continue;
+                    }
+
+
+                    port.Status =
+                        postedPort.Status;
+                }
+            }
+
+
+            await _context.SaveChangesAsync();
+
+
+            TempData["SuccessMessage"] =
+                "Network switch updated successfully.";
+
+
+            return RedirectToAction(
+                nameof(Index));
+        }
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {
             var networkSwitch =
-                await _context.NetworkSwitches.FindAsync(id);
+                await _context.NetworkSwitches
+                    .AsNoTracking()
+                    .Where(s => s.Id == id)
+                    .Select(s =>
+                        new NetworkSwitchDetailsViewModel
+                        {
+                            Id = s.Id,
+
+                            Name = s.Name,
+
+                            SiteId = s.SiteId,
+
+                            SiteName = s.Site.Name,
+
+                            NumberOfPorts = s.NumberOfPorts,
+
+                            IsActive = s.IsActive,
+
+                            AvailablePorts =
+                                s.Ports.Count(p =>
+                                    p.Status ==
+                                    SwitchPortStatus.Available),
+
+                            UsedPorts =
+                                s.Ports.Count(p =>
+                                    p.Status ==
+                                    SwitchPortStatus.Used),
+
+                            OutOfServicePorts =
+                                s.Ports.Count(p =>
+                                    p.Status ==
+                                    SwitchPortStatus.OutOfService),
+
+                            Ports =
+    s.Ports
+        .OrderBy(p => p.PortNumber)
+        .Select(p =>
+            new NetworkSwitchPortDetailsViewModel
+            {
+                Id =
+                    p.Id,
+
+                PortNumber =
+                    p.PortNumber,
+
+                Status =
+                    p.Status,
+
+                CameraId =
+                    p.CameraId,
+
+                CameraName =
+                    p.Camera != null
+                        ? p.Camera.Name
+                        : null,
+
+                CameraIpAddress =
+                    p.Camera != null
+                        ? p.Camera.IpAddress
+                        : null,
+
+                CameraInstallationLocation =
+                    p.Camera != null
+                        ? p.Camera.InstallationLocation
+                        : null,
+
+                CameraDescription =
+                    p.Camera != null
+                        ? p.Camera.Notes
+                        : null
+            })
+        .ToList(),
+
+                            Recorders =
+                                _context.Recorders
+                                    .Where(r =>
+                                        r.NetworkSwitchId == s.Id)
+                                    .OrderBy(r => r.Name)
+                                    .Select(r =>
+                                        new NetworkSwitchRecorderDetailsViewModel
+                                        {
+                                            Id = r.Id,
+
+                                            Name = r.Name,
+
+                                            Type =
+                                                r.Type.ToString(),
+
+                                            IsActive =
+                                                r.IsActive
+                                        })
+                                    .ToList()
+                        })
+                    .FirstOrDefaultAsync();
+
 
             if (networkSwitch == null)
             {
                 return NotFound();
             }
 
-            networkSwitch.Name = model.Name.Trim();
-            networkSwitch.SiteId = model.SiteId;
 
-            await _context.SaveChangesAsync();
-
-            TempData["SuccessMessage"] =
-                "Network switch updated successfully.";
-
-            return RedirectToAction(nameof(Index));
+            return View(networkSwitch);
         }
-
-
         // POST: NetworkSwitches/ToggleStatus/5
         [Authorize(Policy = "CanChangeStatus")]
         [HttpPost]

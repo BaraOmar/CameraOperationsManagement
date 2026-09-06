@@ -5,7 +5,9 @@
 }
 
 <div class="page-header">
+    <div class="d-flex align-items-start gap-3">
 
+        <partial name="_BackButton" />
     <div>
         <h2 class="page-heading">Edit Camera</h2>
 
@@ -13,7 +15,7 @@
             Update the camera information.
         </p>
     </div>
-
+    </div>
 </div>
 
 
@@ -62,14 +64,21 @@
             function () {
 
                 const recorderSelect =
-                    document.getElementById(
-                        "recorderSelect");
+                    document.getElementById("recorderSelect");
 
                 const switchSelect =
-                    document.getElementById(
-                        "switchSelect");
+                    document.getElementById("switchSelect");
+
+                const portSelect =
+                    document.getElementById("portSelect");
+
+                const currentCameraId =
+                    '@Model.Id';
 
 
+                // ==========================================
+                // RECORDER CHANGED
+                // ==========================================
                 recorderSelect.addEventListener(
                     "change",
                     async function () {
@@ -81,6 +90,9 @@
                         switchSelect.innerHTML =
                             '<option value="">No switch</option>';
 
+                        portSelect.innerHTML =
+                            '<option value="">Select port</option>';
+
 
                         if (!recorderId ||
                             recorderId === "0") {
@@ -89,12 +101,9 @@
 
 
                         const url =
-                            '@Url.Action(
-                                                            "GetSwitchesByRecorder",
-                                                            "Cameras")'
+                            '@Url.Action("GetSwitchesByRecorder", "Cameras")'
                             + '?recorderId='
-                            + encodeURIComponent(
-                                recorderId);
+                            + encodeURIComponent(recorderId);
 
 
                         try {
@@ -112,30 +121,96 @@
                                 await response.json();
 
 
-                            switches.forEach(
-                                item => {
+                            switches.forEach(item => {
 
-                                    const option =
-                                        document.createElement(
-                                            "option");
+                                const option =
+                                    document.createElement("option");
 
-                                    option.value =
-                                        item.id;
+                                option.value =
+                                    item.id;
 
-                                    option.textContent =
-                                        item.name;
+                                option.textContent =
+                                    item.name;
 
-                                    switchSelect
-                                        .appendChild(option);
-                                });
+                                switchSelect
+                                    .appendChild(option);
+                            });
                         }
                         catch (error) {
 
                             console.error(
-                                "Could not load switch.",
+                                "Could not load switches.",
                                 error);
                         }
                     });
+
+
+                // ==========================================
+                // SWITCH CHANGED
+                // ==========================================
+                switchSelect.addEventListener(
+                    "change",
+                    async function () {
+
+                        const switchId =
+                            this.value;
+
+
+                        portSelect.innerHTML =
+                            '<option value="">Select port</option>';
+
+
+                        if (!switchId) {
+                            return;
+                        }
+
+
+                        const url =
+                            '@Url.Action("GetAvailablePorts", "Cameras")'
+                            + '?switchId='
+                            + encodeURIComponent(switchId)
+                            + '&currentCameraId='
+                            + encodeURIComponent(currentCameraId);
+
+
+                        try {
+
+                            const response =
+                                await fetch(url);
+
+
+                            if (!response.ok) {
+                                return;
+                            }
+
+
+                            const ports =
+                                await response.json();
+
+
+                            ports.forEach(item => {
+
+                                const option =
+                                    document.createElement("option");
+
+                                option.value =
+                                    item.id;
+
+                                option.textContent =
+                                    item.text;
+
+                                portSelect
+                                    .appendChild(option);
+                            });
+                        }
+                        catch (error) {
+
+                            console.error(
+                                "Could not load ports.",
+                                error);
+                        }
+                    });
+
             });
     </script>
 }
